@@ -60,10 +60,10 @@ function seed() {
     }
   }
   // Today is still in progress — only breakfast/lunch logged so far.
-  food_log.push(mkFood(today, 'Oats', 80, 389, 16.9, 66.3, 6.9))
-  food_log.push(mkFood(today, 'Whole milk', 300, 64, 3.3, 4.8, 3.6))
-  food_log.push(mkFood(today, 'Eggs', 100, 155, 13, 1.1, 11))
-  food_log.push(mkFood(today, 'Chicken breast', 200, 165, 31, 0, 3.6))
+  food_log.push(mkFood(today, 'Oats', 80, 389, 16.9, 66.3, 6.9, 'breakfast'))
+  food_log.push(mkFood(today, 'Whole milk', 300, 64, 3.3, 4.8, 3.6, 'breakfast'))
+  food_log.push(mkFood(today, 'Eggs', 100, 155, 13, 1.1, 11, 'breakfast'))
+  food_log.push(mkFood(today, 'Chicken breast', 200, 165, 31, 0, 3.6, 'lunch'))
 
   // A sample saved meal so the quick-add UI is populated on load.
   const breakfastItems = [
@@ -153,7 +153,7 @@ function mkItem(name, grams, kcal100, p100, c100, f100) {
   }
 }
 
-function mkFood(day, name, grams, kcal100, p100, c100, f100) {
+function mkFood(day, name, grams, kcal100, p100, c100, f100, meal = null) {
   const f = grams / 100
   return {
     id: uuid(),
@@ -166,6 +166,7 @@ function mkFood(day, name, grams, kcal100, p100, c100, f100) {
     protein_g: Math.round(p100 * f),
     carb_g: Math.round(c100 * f),
     fat_g: Math.round(f100 * f),
+    meal,
     created_at: `${day}T12:00:00.000Z`,
   }
 }

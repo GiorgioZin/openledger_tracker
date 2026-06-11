@@ -34,6 +34,7 @@ create table if not exists public.food_log (
   protein_g  numeric not null default 0,
   carb_g     numeric not null default 0,
   fat_g      numeric not null default 0,
+  meal       text,                       -- 'breakfast' | 'lunch' | 'dinner' | 'snack' | null
   created_at timestamptz not null default now()
 );
 

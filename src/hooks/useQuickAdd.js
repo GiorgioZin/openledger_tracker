@@ -48,7 +48,7 @@ export function useQuickAdd(limit = 8) {
   }, [load])
 
   // Insert a list of per-portion items into a day's food log (defaults to today).
-  const logItems = useCallback(async (items, dayISO) => {
+  const logItems = useCallback(async (items, dayISO, meal = null) => {
     const { data: u } = await supabase.auth.getUser()
     const user_id = u?.user?.id
     const day = dayISO || todayISO()
@@ -62,6 +62,7 @@ export function useQuickAdd(limit = 8) {
       protein_g: Number(it.protein_g),
       carb_g: Number(it.carb_g),
       fat_g: Number(it.fat_g),
+      meal: meal ?? it.meal ?? null,
     }))
     if (rows.length) await supabase.from('food_log').insert(rows)
   }, [])
