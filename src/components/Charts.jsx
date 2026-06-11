@@ -45,7 +45,7 @@ export function WeightChart({ series, height = 180 }) {
   const last = series[series.length - 1]
 
   return (
-    <figure className="m-0">
+    <figure className="mx-auto w-full max-w-xl">
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Bodyweight trend over time">
         {ticks.map((t) => (
           <g key={t}>
@@ -95,7 +95,7 @@ export function CaloriesChart({ series, target, statusByDate = {}, days = 14, he
   const ticks = axisTicks(0, maxKcal, 4)
 
   return (
-    <figure className="m-0">
+    <figure className="mx-auto w-full max-w-xl">
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Daily calorie intake">
         {ticks.map((t) => (
           <g key={t}>

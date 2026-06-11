@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext.jsx'
 import SignIn from './components/SignIn.jsx'
 import SetupNotice from './components/SetupNotice.jsx'
 import { Sidebar, BottomNav } from './components/Nav.jsx'
+import { ToastProvider } from './components/Toast.jsx'
 import DashboardPage from './components/DashboardPage.jsx'
 import FoodPage from './components/FoodPage.jsx'
 import WeightPage from './components/WeightPage.jsx'
@@ -19,6 +20,7 @@ export default function App() {
   if (!session) return <SignIn />
 
   return (
+    <ToastProvider>
     <div className="flex min-h-full">
       <Sidebar />
       <div className="safe-top flex min-h-full min-w-0 flex-1 flex-col">
@@ -41,6 +43,7 @@ export default function App() {
       </div>
       <BottomNav />
     </div>
+    </ToastProvider>
   )
 }
 
