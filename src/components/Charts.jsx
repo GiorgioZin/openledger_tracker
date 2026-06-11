@@ -40,6 +40,8 @@ export function WeightChart({ series, height = 180 }) {
   const areaPath = `${trendPath} L${x(series.length - 1)},${PAD.top + innerH} L${x(0)},${PAD.top + innerH} Z`
 
   const ticks = axisTicks(lo, hi, 4)
+  // Narrow weight ranges need a decimal, else ticks collapse to duplicates.
+  const fmtY = hi - lo < 8 ? (v) => v.toFixed(1) : (v) => String(Math.round(v))
   const last = series[series.length - 1]
 
   return (
@@ -49,7 +51,7 @@ export function WeightChart({ series, height = 180 }) {
           <g key={t}>
             <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} stroke="#1e293b" strokeWidth="1" />
             <text x={PAD.left - 6} y={y(t) + 3} textAnchor="end" className="fill-slate-500" fontSize="9">
-              {Math.round(t)}
+              {fmtY(t)}
             </text>
           </g>
         ))}

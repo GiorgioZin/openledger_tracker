@@ -85,7 +85,7 @@ export default function WeightPage() {
             value={kg}
             onChange={(e) => setKg(e.target.value)}
             placeholder="kg"
-            className="w-28 rounded-lg bg-slate-900 px-4 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+            className="w-20 rounded-lg bg-slate-900 px-3 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
           />
           <input
             type="date"
