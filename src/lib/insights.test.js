@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeInsights } from './insights.js'
+import { computeInsights, computeStreak } from './insights.js'
 
 function intake(kcals) {
   // Dates don't matter to the math beyond ordering; build a simple ascending run.
@@ -36,5 +36,28 @@ describe('computeInsights', () => {
     const r = computeInsights({ intakeSeries: [], trendKg: 80, weeklySlopeKg: 0.3, goalWeightKg: 76 })
     expect(r.onTrack).toBe(false)
     expect(r.etaDateISO).toBeNull()
+  })
+})
+
+describe('computeStreak', () => {
+  it('counts consecutive logged days ending today', () => {
+    const r = computeStreak(['2026-03-08', '2026-03-09', '2026-03-10'], '2026-03-10')
+    expect(r.current).toBe(3)
+    expect(r.longest).toBe(3)
+  })
+
+  it('stays alive when today is not logged yet but yesterday was', () => {
+    const r = computeStreak(['2026-03-08', '2026-03-09'], '2026-03-10')
+    expect(r.current).toBe(2)
+  })
+
+  it('breaks the current streak after a gap', () => {
+    const r = computeStreak(['2026-03-01', '2026-03-02', '2026-03-09', '2026-03-10'], '2026-03-10')
+    expect(r.current).toBe(2)
+    expect(r.longest).toBe(2)
+  })
+
+  it('is zero with no recent logs', () => {
+    expect(computeStreak(['2026-01-01'], '2026-03-10').current).toBe(0)
   })
 })

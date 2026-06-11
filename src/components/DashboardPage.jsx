@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase.js'
 import { todayISO, prettyDate } from '../lib/dates.js'
 import { useTargets } from '../hooks/useTargets.js'
 import { useDayTotals } from '../hooks/useDayTotals.js'
-import { computeInsights } from '../lib/insights.js'
+import { computeInsights, computeStreak } from '../lib/insights.js'
 import ProgressBar from './ProgressBar.jsx'
 import { WeightChart, CaloriesChart } from './Charts.jsx'
 
@@ -31,6 +31,10 @@ export default function DashboardPage() {
       })
     : null
 
+  const loggedDates = intakeSeries.filter((d) => Number(d.kcal) > 0).map((d) => d.logged_on)
+  const streak = computeStreak(loggedDates, today)
+  const loggedToday = loggedDates.includes(today)
+
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
@@ -38,13 +42,32 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-white">Today</h1>
           <p className="text-sm text-slate-400">{prettyDate(today)}</p>
         </div>
-        <button
-          onClick={() => supabase.auth.signOut()}
-          className="text-xs text-slate-500 underline lg:hidden"
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-3">
+          {streak.current > 0 && (
+            <span
+              className="rounded-full bg-amber-500/15 px-3 py-1 text-sm font-semibold text-amber-400"
+              title={`Longest streak: ${streak.longest} days`}
+            >
+              🔥 {streak.current}d
+            </span>
+          )}
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="text-xs text-slate-500 underline lg:hidden"
+          >
+            Sign out
+          </button>
+        </div>
       </header>
+
+      {!loading && targets && !loggedToday && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-sky-500/10 px-4 py-3 text-sm text-sky-200">
+          <span>You haven’t logged any food today.</span>
+          <Link to="/food" className="shrink-0 font-semibold text-sky-300 hover:text-sky-200">
+            Log food →
+          </Link>
+        </div>
+      )}
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
