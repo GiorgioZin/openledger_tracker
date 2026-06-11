@@ -60,10 +60,11 @@ function seed() {
     }
   }
   // Today is still in progress — only breakfast/lunch logged so far.
-  food_log.push(mkFood(today, 'Oats', 80, 389, 16.9, 66.3, 6.9, 'breakfast'))
-  food_log.push(mkFood(today, 'Whole milk', 300, 64, 3.3, 4.8, 3.6, 'breakfast'))
-  food_log.push(mkFood(today, 'Eggs', 100, 155, 13, 1.1, 11, 'breakfast'))
-  food_log.push(mkFood(today, 'Chicken breast', 200, 165, 31, 0, 3.6, 'lunch'))
+  // Trailing object carries per-100g micronutrients {fiber, sugar, satfat, sodium(mg)}.
+  food_log.push(mkFood(today, 'Oats', 80, 389, 16.9, 66.3, 6.9, 'breakfast', { fib: 10.6, sug: 1, sat: 1.2, sod: 2 }))
+  food_log.push(mkFood(today, 'Whole milk', 300, 64, 3.3, 4.8, 3.6, 'breakfast', { fib: 0, sug: 4.8, sat: 2.3, sod: 43 }))
+  food_log.push(mkFood(today, 'Eggs', 100, 155, 13, 1.1, 11, 'breakfast', { fib: 0, sug: 0.4, sat: 3.1, sod: 142 }))
+  food_log.push(mkFood(today, 'Chicken breast', 200, 165, 31, 0, 3.6, 'lunch', { fib: 0, sug: 0, sat: 1, sod: 74 }))
 
   // A sample saved meal so the quick-add UI is populated on load.
   const breakfastItems = [
@@ -153,8 +154,9 @@ function mkItem(name, grams, kcal100, p100, c100, f100) {
   }
 }
 
-function mkFood(day, name, grams, kcal100, p100, c100, f100, meal = null) {
+function mkFood(day, name, grams, kcal100, p100, c100, f100, meal = null, micros = null) {
   const f = grams / 100
+  const m = micros || {}
   return {
     id: uuid(),
     user_id: DEMO_USER.id,
@@ -166,6 +168,10 @@ function mkFood(day, name, grams, kcal100, p100, c100, f100, meal = null) {
     protein_g: Math.round(p100 * f),
     carb_g: Math.round(c100 * f),
     fat_g: Math.round(f100 * f),
+    fiber_g: Math.round((m.fib || 0) * f),
+    sugar_g: Math.round((m.sug || 0) * f),
+    satfat_g: Math.round((m.sat || 0) * f),
+    sodium_mg: Math.round((m.sod || 0) * f),
     meal,
     created_at: `${day}T12:00:00.000Z`,
   }

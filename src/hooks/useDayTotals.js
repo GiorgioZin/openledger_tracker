@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 
-const empty = { kcal: 0, protein_g: 0, carb_g: 0, fat_g: 0 }
+const empty = { kcal: 0, protein_g: 0, carb_g: 0, fat_g: 0, fiber_g: 0, sugar_g: 0, satfat_g: 0, sodium_mg: 0 }
 
 // Sums today's (or a given day's) food_log macros.
 export function useDayTotals(dayISO) {
@@ -25,6 +25,10 @@ export function useDayTotals(dayISO) {
           protein_g: acc.protein_g + Number(r.protein_g),
           carb_g: acc.carb_g + Number(r.carb_g),
           fat_g: acc.fat_g + Number(r.fat_g),
+          fiber_g: acc.fiber_g + Number(r.fiber_g || 0),
+          sugar_g: acc.sugar_g + Number(r.sugar_g || 0),
+          satfat_g: acc.satfat_g + Number(r.satfat_g || 0),
+          sodium_mg: acc.sodium_mg + Number(r.sodium_mg || 0),
         }),
         { ...empty },
       ),

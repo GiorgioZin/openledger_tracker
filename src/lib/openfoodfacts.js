@@ -7,16 +7,16 @@ const PRODUCT_URL = 'https://world.openfoodfacts.org/api/v2/product'
 // Demo mode serves a small local catalog so food search works with no network.
 const DEMO = import.meta.env.VITE_DEMO === 'true' || !import.meta.env.VITE_SUPABASE_URL
 const DEMO_CATALOG = [
-  { barcode: '8000000000017', name: 'Oats, rolled', brand: 'Demo', kcal: 389, protein_g: 16.9, carb_g: 66.3, fat_g: 6.9, source: 'demo' },
-  { barcode: '8000000000024', name: 'Chicken breast, raw', brand: 'Demo', kcal: 165, protein_g: 31, carb_g: 0, fat_g: 3.6, source: 'demo' },
-  { barcode: '8000000000031', name: 'Whole milk', brand: 'Demo', kcal: 64, protein_g: 3.3, carb_g: 4.8, fat_g: 3.6, source: 'demo' },
-  { barcode: '8000000000048', name: 'Banana', brand: 'Demo', kcal: 89, protein_g: 1.1, carb_g: 22.8, fat_g: 0.3, source: 'demo' },
-  { barcode: '8000000000055', name: 'Greek yogurt 0%', brand: 'Demo', kcal: 59, protein_g: 10, carb_g: 3.6, fat_g: 0.4, source: 'demo' },
-  { barcode: '8000000000062', name: 'White rice, cooked', brand: 'Demo', kcal: 130, protein_g: 2.7, carb_g: 28, fat_g: 0.3, source: 'demo' },
-  { barcode: '8000000000079', name: 'Olive oil', brand: 'Demo', kcal: 884, protein_g: 0, carb_g: 0, fat_g: 100, source: 'demo' },
-  { barcode: '8000000000086', name: 'Egg, whole', brand: 'Demo', kcal: 143, protein_g: 12.6, carb_g: 0.7, fat_g: 9.5, source: 'demo' },
-  { barcode: '8000000000093', name: 'Almonds', brand: 'Demo', kcal: 579, protein_g: 21.2, carb_g: 21.6, fat_g: 49.9, source: 'demo' },
-  { barcode: '8000000000109', name: 'Pasta, dry', brand: 'Demo', kcal: 371, protein_g: 13, carb_g: 75, fat_g: 1.5, source: 'demo' },
+  { barcode: '8000000000017', name: 'Oats, rolled', brand: 'Demo', kcal: 389, protein_g: 16.9, carb_g: 66.3, fat_g: 6.9, fiber_g: 10.6, sugar_g: 0.99, satfat_g: 1.2, sodium_mg: 2, source: 'demo' },
+  { barcode: '8000000000024', name: 'Chicken breast, raw', brand: 'Demo', kcal: 165, protein_g: 31, carb_g: 0, fat_g: 3.6, fiber_g: 0, sugar_g: 0, satfat_g: 1, sodium_mg: 74, source: 'demo' },
+  { barcode: '8000000000031', name: 'Whole milk', brand: 'Demo', kcal: 64, protein_g: 3.3, carb_g: 4.8, fat_g: 3.6, fiber_g: 0, sugar_g: 4.8, satfat_g: 2.3, sodium_mg: 43, source: 'demo' },
+  { barcode: '8000000000048', name: 'Banana', brand: 'Demo', kcal: 89, protein_g: 1.1, carb_g: 22.8, fat_g: 0.3, fiber_g: 2.6, sugar_g: 12.2, satfat_g: 0.1, sodium_mg: 1, source: 'demo' },
+  { barcode: '8000000000055', name: 'Greek yogurt 0%', brand: 'Demo', kcal: 59, protein_g: 10, carb_g: 3.6, fat_g: 0.4, fiber_g: 0, sugar_g: 3.6, satfat_g: 0.1, sodium_mg: 36, source: 'demo' },
+  { barcode: '8000000000062', name: 'White rice, cooked', brand: 'Demo', kcal: 130, protein_g: 2.7, carb_g: 28, fat_g: 0.3, fiber_g: 0.4, sugar_g: 0.1, satfat_g: 0.1, sodium_mg: 1, source: 'demo' },
+  { barcode: '8000000000079', name: 'Olive oil', brand: 'Demo', kcal: 884, protein_g: 0, carb_g: 0, fat_g: 100, fiber_g: 0, sugar_g: 0, satfat_g: 13.8, sodium_mg: 2, source: 'demo' },
+  { barcode: '8000000000086', name: 'Egg, whole', brand: 'Demo', kcal: 143, protein_g: 12.6, carb_g: 0.7, fat_g: 9.5, fiber_g: 0, sugar_g: 0.4, satfat_g: 3.1, sodium_mg: 142, source: 'demo' },
+  { barcode: '8000000000093', name: 'Almonds', brand: 'Demo', kcal: 579, protein_g: 21.2, carb_g: 21.6, fat_g: 49.9, fiber_g: 12.5, sugar_g: 4.4, satfat_g: 3.8, sodium_mg: 1, source: 'demo' },
+  { barcode: '8000000000109', name: 'Pasta, dry', brand: 'Demo', kcal: 371, protein_g: 13, carb_g: 75, fat_g: 1.5, fiber_g: 3.2, sugar_g: 2.7, satfat_g: 0.3, sodium_mg: 6, source: 'demo' },
 ]
 
 // Map an OFF product to our per-100g shape. OFF nutriments are per 100 g/ml.
@@ -27,6 +27,8 @@ function mapProduct(p) {
     n['energy-kcal_100g'] ??
     (n['energy_100g'] ? Math.round(n['energy_100g'] / 4.184) : null)
   if (kcal == null) return null // unusable without calories
+  // OFF reports sodium in grams per 100 g; we store milligrams.
+  const sodium_g = n['sodium_100g'] ?? (n['salt_100g'] != null ? n['salt_100g'] / 2.5 : 0)
   return {
     barcode: p.code || null,
     name: p.product_name || p.generic_name || 'Unknown product',
@@ -35,6 +37,10 @@ function mapProduct(p) {
     protein_g: Number(n['proteins_100g'] || 0),
     carb_g: Number(n['carbohydrates_100g'] || 0),
     fat_g: Number(n['fat_100g'] || 0),
+    fiber_g: Number(n['fiber_100g'] || 0),
+    sugar_g: Number(n['sugars_100g'] || 0),
+    satfat_g: Number(n['saturated-fat_100g'] || 0),
+    sodium_mg: Math.round(Number(sodium_g || 0) * 1000),
     source: 'openfoodfacts',
   }
 }

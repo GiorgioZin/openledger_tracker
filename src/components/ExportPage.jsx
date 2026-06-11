@@ -16,7 +16,7 @@ export default function ExportPage() {
       const [food, weight, targets, workouts] = await Promise.all([
         supabase
           .from('food_log')
-          .select('logged_on, name, grams, kcal, protein_g, carb_g, fat_g')
+          .select('logged_on, meal, name, grams, kcal, protein_g, carb_g, fat_g, fiber_g, sugar_g, satfat_g, sodium_mg')
           .gte('logged_on', from)
           .lte('logged_on', to)
           .order('logged_on'),
