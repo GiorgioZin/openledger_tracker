@@ -1,0 +1,125 @@
+-- Ledger schema (Postgres / Supabase)
+-- Single-user app: every row is owned by a user_id and locked down with RLS.
+-- Run this in the Supabase SQL editor on a fresh project.
+
+-- ---------------------------------------------------------------------------
+-- Tables
+-- ---------------------------------------------------------------------------
+
+-- Cached nutrition facts (pulled from Open Food Facts, per 100 g).
+create table if not exists public.foods (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  barcode     text,
+  name        text not null,
+  brand       text,
+  kcal        numeric not null,          -- per 100 g
+  protein_g   numeric not null default 0,
+  carb_g      numeric not null default 0,
+  fat_g       numeric not null default 0,
+  source      text not null default 'openfoodfacts',
+  fetched_at  timestamptz not null default now()
+);
+
+-- What you ate. Macros are denormalized so historical rows stay correct
+-- even if a food's upstream data later changes.
+create table if not exists public.food_log (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  logged_on  date not null default current_date,
+  food_id    uuid references public.foods (id) on delete set null,
+  name       text not null,             -- snapshot of the food name at log time
+  grams      numeric not null,
+  kcal       numeric not null,
+  protein_g  numeric not null default 0,
+  carb_g     numeric not null default 0,
+  fat_g      numeric not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- Bodyweight, entered manually. One row per day (upserted).
+create table if not exists public.weight_log (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  logged_on  date not null default current_date,
+  kg         numeric not null,
+  source     text not null default 'manual',
+  created_at timestamptz not null default now(),
+  unique (user_id, logged_on)
+);
+
+-- Strength training.
+create table if not exists public.workouts (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  performed_on date not null default current_date,
+  notes        text,
+  created_at   timestamptz not null default now()
+);
+
+create table if not exists public.workout_sets (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  workout_id  uuid not null references public.workouts (id) on delete cascade,
+  exercise    text not null,
+  set_index   int not null,
+  weight_kg   numeric,
+  reps        int,
+  rpe         numeric
+);
+
+-- Adaptive engine output, one row per day it runs.
+create table if not exists public.targets (
+  id              uuid primary key default gen_random_uuid(),
+  user_id         uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  computed_on     date not null default current_date,
+  tdee_est        numeric,
+  target_kcal     numeric,
+  protein_g       numeric,
+  carb_g          numeric,
+  fat_g           numeric,
+  trend_kg        numeric,
+  weekly_slope_kg numeric,
+  unique (user_id, computed_on)
+);
+
+-- Goal settings (single row per user). Drives the adaptive engine.
+create table if not exists public.settings (
+  user_id        uuid primary key default auth.uid() references auth.users (id) on delete cascade,
+  goal_rate_pct  numeric not null default 0,   -- weekly bodyweight change, % (neg = cut)
+  updated_at     timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------------
+-- Indexes
+-- ---------------------------------------------------------------------------
+create index if not exists food_log_user_date_idx   on public.food_log (user_id, logged_on);
+create index if not exists weight_log_user_date_idx  on public.weight_log (user_id, logged_on);
+create index if not exists workouts_user_date_idx    on public.workouts (user_id, performed_on);
+create index if not exists workout_sets_workout_idx  on public.workout_sets (workout_id);
+create index if not exists foods_user_barcode_idx    on public.foods (user_id, barcode);
+
+-- ---------------------------------------------------------------------------
+-- Row-level security: a user only ever sees their own rows.
+-- ---------------------------------------------------------------------------
+alter table public.foods        enable row level security;
+alter table public.food_log     enable row level security;
+alter table public.weight_log   enable row level security;
+alter table public.workouts     enable row level security;
+alter table public.workout_sets enable row level security;
+alter table public.targets      enable row level security;
+alter table public.settings     enable row level security;
+
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'foods','food_log','weight_log','workouts','workout_sets','targets','settings'
+  ] loop
+    execute format(
+      'create policy %1$I_owner on public.%1$I
+         for all to authenticated
+         using (user_id = auth.uid())
+         with check (user_id = auth.uid());', t);
+  end loop;
+end $$;
