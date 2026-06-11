@@ -97,6 +97,24 @@ function seed() {
     },
   ]
 
+  // An in-progress fast started ~14h ago, plus one completed yesterday.
+  const fasts = [
+    {
+      id: uuid(),
+      user_id: DEMO_USER.id,
+      started_at: new Date(Date.now() - 14 * 3600 * 1000).toISOString(),
+      ended_at: null,
+      created_at: new Date(Date.now() - 14 * 3600 * 1000).toISOString(),
+    },
+    {
+      id: uuid(),
+      user_id: DEMO_USER.id,
+      started_at: new Date(Date.now() - 38 * 3600 * 1000).toISOString(),
+      ended_at: new Date(Date.now() - 21 * 3600 * 1000).toISOString(),
+      created_at: new Date(Date.now() - 38 * 3600 * 1000).toISOString(),
+    },
+  ]
+
   // A few waist measurements trending down over the last few weeks.
   const measurements = []
   for (let i = 21; i >= 0; i -= 7) {
@@ -121,6 +139,7 @@ function seed() {
     meals,
     recipes,
     measurements,
+    fasts,
     day_status: [],
     settings: [
       {
@@ -132,6 +151,7 @@ function seed() {
         tdee_mode: 'dynamic',
         activity_level: 'moderate',
         daily_steps: 8000,
+        fast_target_hours: 16,
         custom_kcal: null,
         custom_protein_g: null,
         custom_carb_g: null,
