@@ -65,5 +65,24 @@ describe('computeTargets', () => {
     const r = computeTargets({ weights, dailyIntake: [], goalRatePct: 0 })
     expect(r.tdee_est).toBeGreaterThan(2000)
     expect(r.target_kcal).toBeGreaterThan(2000)
+    expect(r.tdee_source).toBe('estimate')
+  })
+
+  it('does not collapse the target when only a day or two of intake exists', () => {
+    // Regression: a single low/partial day used to drag TDEE (and the target)
+    // down to a few hundred kcal. Sparse intake must use the maintenance guess.
+    const weights = series('2026-01-01', Array.from({ length: 15 }, (_, i) => 80 - i * 0.02))
+    const dailyIntake = [{ logged_on: weights[weights.length - 1].logged_on, kcal: 800 }]
+    const r = computeTargets({ weights, dailyIntake, goalRatePct: -0.5 })
+    expect(r.tdee_source).toBe('estimate')
+    expect(r.intake_days).toBe(1)
+    expect(r.target_kcal).toBeGreaterThan(1800)
+  })
+
+  it('uses energy balance once enough days are logged', () => {
+    const weights = series('2026-01-01', Array.from({ length: 15 }, () => 80))
+    const dailyIntake = weights.map((w) => ({ logged_on: w.logged_on, kcal: 2400 }))
+    const r = computeTargets({ weights, dailyIntake, goalRatePct: 0 })
+    expect(r.tdee_source).toBe('balance')
   })
 })

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { todayISO, prettyDate } from '../lib/dates.js'
 import { ewmaTrend } from '../lib/engine.js'
+import { WeightChart } from './Charts.jsx'
 
 export default function WeightPage() {
   const [rows, setRows] = useState([])
@@ -67,14 +68,15 @@ export default function WeightPage() {
 
   // Trend for display (ascending order then re-reverse).
   const ascending = [...rows].sort((a, b) => a.logged_on.localeCompare(b.logged_on))
-  const trended = ewmaTrend(ascending).reverse()
+  const ascTrend = ewmaTrend(ascending)
+  const trended = [...ascTrend].reverse()
 
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-bold text-white">Weight</h1>
 
       <form onSubmit={save} className="rounded-2xl bg-slate-800/60 p-4">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <input
             type="number"
             step="0.1"
@@ -89,12 +91,12 @@ export default function WeightPage() {
             value={date}
             max={todayISO()}
             onChange={(e) => setDate(e.target.value)}
-            className="flex-1 rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+            className="min-w-0 flex-1 rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
           />
           <button
             type="submit"
             disabled={busy}
-            className="rounded-lg bg-emerald-600 px-4 font-semibold text-white disabled:opacity-50"
+            className="rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white disabled:opacity-50"
           >
             {busy ? '…' : 'Save'}
           </button>
@@ -102,12 +104,19 @@ export default function WeightPage() {
         {err && <p className="mt-2 text-sm text-red-400">{err}</p>}
       </form>
 
+      {!loading && rows.length >= 2 && (
+        <section className="rounded-2xl bg-slate-800/60 p-4">
+          <h2 className="mb-2 text-sm font-medium text-slate-300">Trend</h2>
+          <WeightChart series={ascTrend} height={200} />
+        </section>
+      )}
+
       {loading ? (
         <p className="text-slate-400">Loading…</p>
       ) : rows.length === 0 ? (
         <p className="text-sm text-slate-500">No weigh-ins yet.</p>
       ) : (
-        <ul className="space-y-1">
+        <ul className="grid gap-1 sm:grid-cols-2">
           {trended.map((r) => (
             <li
               key={r.logged_on}

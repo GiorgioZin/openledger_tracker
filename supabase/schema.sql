@@ -87,7 +87,18 @@ create table if not exists public.targets (
 create table if not exists public.settings (
   user_id        uuid primary key default auth.uid() references auth.users (id) on delete cascade,
   goal_rate_pct  numeric not null default 0,   -- weekly bodyweight change, % (neg = cut)
+  goal_weight_kg numeric,                       -- optional target weight, for ETA projection
   updated_at     timestamptz not null default now()
+);
+
+-- Saved meals: a named bundle of food items you can re-log in one tap.
+-- Items are denormalized per-portion (same shape as food_log entries).
+create table if not exists public.meals (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name       text not null,
+  items      jsonb not null default '[]',  -- [{name, grams, kcal, protein_g, carb_g, fat_g}]
+  created_at timestamptz not null default now()
 );
 
 -- ---------------------------------------------------------------------------
@@ -98,6 +109,7 @@ create index if not exists weight_log_user_date_idx  on public.weight_log (user_
 create index if not exists workouts_user_date_idx    on public.workouts (user_id, performed_on);
 create index if not exists workout_sets_workout_idx  on public.workout_sets (workout_id);
 create index if not exists foods_user_barcode_idx    on public.foods (user_id, barcode);
+create index if not exists meals_user_idx             on public.meals (user_id, created_at desc);
 
 -- ---------------------------------------------------------------------------
 -- Row-level security: a user only ever sees their own rows.
@@ -109,12 +121,13 @@ alter table public.workouts     enable row level security;
 alter table public.workout_sets enable row level security;
 alter table public.targets      enable row level security;
 alter table public.settings     enable row level security;
+alter table public.meals        enable row level security;
 
 do $$
 declare t text;
 begin
   foreach t in array array[
-    'foods','food_log','weight_log','workouts','workout_sets','targets','settings'
+    'foods','food_log','weight_log','workouts','workout_sets','targets','settings','meals'
   ] loop
     execute format(
       'create policy %1$I_owner on public.%1$I

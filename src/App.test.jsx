@@ -51,9 +51,9 @@ describe('App (demo mode, full render)', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Food' })).toBeInTheDocument(),
     )
-    // Seeded items appear in the logged list.
+    // Seeded items appear (in the logged list, and now also as a recent chip).
     await waitFor(() =>
-      expect(screen.getByText('Chicken breast')).toBeInTheDocument(),
+      expect(screen.getAllByText('Chicken breast').length).toBeGreaterThan(0),
     )
   })
 })

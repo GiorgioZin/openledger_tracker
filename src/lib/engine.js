@@ -11,6 +11,13 @@
 
 const KCAL_PER_KG = 7700
 
+// Energy-balance TDEE needs a few days of intake to mean anything; one partial
+// day would otherwise drag the estimate (and the calorie target) absurdly low.
+// Below this many logged days in the window we fall back to a maintenance guess.
+const MIN_INTAKE_DAYS = 5
+// Rough maintenance multiplier (kcal per kg) used only as a cold-start fallback.
+const MAINTENANCE_KCAL_PER_KG = 31
+
 /**
  * Exponentially-weighted moving average over a date-ordered weight series.
  * Returns a parallel array of { logged_on, kg, trend } points.
@@ -76,13 +83,17 @@ export function computeTargets({ weights, dailyIntake, goalRatePct = 0, windowDa
   const meanIntake = mean(recentIntake)
 
   // TDEE from energy balance: intake minus the energy implied by trend change.
-  // If we have no intake data yet, fall back to a maintenance estimate so the
-  // app is still useful on day one.
+  // Until enough days of intake are logged the estimate is unreliable, so we
+  // fall back to a maintenance guess — this keeps day-one (and sparse) targets
+  // sane instead of collapsing to a few hundred calories.
   let tdee
-  if (meanIntake !== null) {
+  let tdee_source
+  if (meanIntake !== null && recentIntake.length >= MIN_INTAKE_DAYS) {
     tdee = meanIntake - (deltaTrend * KCAL_PER_KG) / spanDays
+    tdee_source = 'balance'
   } else {
-    tdee = Math.round(weight * 31) // rough maintenance placeholder
+    tdee = weight * MAINTENANCE_KCAL_PER_KG
+    tdee_source = 'estimate'
   }
 
   const targetKcal = tdee + (goalRatePct / 100) * weight * KCAL_PER_KG / 7
@@ -96,6 +107,8 @@ export function computeTargets({ weights, dailyIntake, goalRatePct = 0, windowDa
     trend_kg: round2(trendToday),
     weekly_slope_kg: round2(weeklySlope),
     tdee_est: Math.round(tdee),
+    tdee_source,
+    intake_days: recentIntake.length,
     target_kcal: Math.round(targetKcal),
     protein_g,
     carb_g,
