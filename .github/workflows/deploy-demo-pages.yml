@@ -1,0 +1,48 @@
+name: Deploy demo to GitHub Pages
+
+# Publishes the no-backend demo build (seeded sample data, no Supabase) to
+# GitHub Pages so the app can be opened and clicked from any browser.
+on:
+  push:
+    branches:
+      - claude/relaxed-galileo-zix3am
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; newer runs cancel in-progress ones.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Base path must match the project-pages subpath so assets resolve.
+      - run: npm run build:demo -- --base=/openledger_tracker/
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
