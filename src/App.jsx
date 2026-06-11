@@ -7,6 +7,7 @@ import { Sidebar, BottomNav } from './components/Nav.jsx'
 import DashboardPage from './components/DashboardPage.jsx'
 import FoodPage from './components/FoodPage.jsx'
 import WeightPage from './components/WeightPage.jsx'
+import SettingsPage from './components/SettingsPage.jsx'
 import ExportPage from './components/ExportPage.jsx'
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/food" element={<FoodPage />} />
             <Route path="/weight" element={<WeightPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/export" element={<ExportPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

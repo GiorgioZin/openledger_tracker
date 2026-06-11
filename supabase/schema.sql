@@ -87,8 +87,24 @@ create table if not exists public.targets (
 create table if not exists public.settings (
   user_id        uuid primary key default auth.uid() references auth.users (id) on delete cascade,
   goal_rate_pct  numeric not null default 0,   -- weekly bodyweight change, % (neg = cut)
+  goal_rate_unit text not null default 'pct',  -- 'pct' (%/wk) or 'kg' (kg/wk)
+  goal_rate_kg   numeric not null default 0,   -- weekly bodyweight change, kg (neg = cut)
   goal_weight_kg numeric,                       -- optional target weight, for ETA projection
+  tdee_mode      text not null default 'dynamic', -- 'dynamic' (adaptive) or 'custom'
+  custom_kcal     numeric,                      -- used when tdee_mode = 'custom'
+  custom_protein_g numeric,
+  custom_carb_g    numeric,
+  custom_fat_g     numeric,
   updated_at     timestamptz not null default now()
+);
+
+-- Per-day logging completeness. Absent row = 'complete'. Days marked 'partial'
+-- or 'unlogged' are excluded from the adaptive TDEE average.
+create table if not exists public.day_status (
+  user_id   uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  logged_on date not null,
+  status    text not null default 'complete',  -- 'complete' | 'partial' | 'unlogged'
+  primary key (user_id, logged_on)
 );
 
 -- Saved meals: a named bundle of food items you can re-log in one tap.
@@ -122,12 +138,13 @@ alter table public.workout_sets enable row level security;
 alter table public.targets      enable row level security;
 alter table public.settings     enable row level security;
 alter table public.meals        enable row level security;
+alter table public.day_status   enable row level security;
 
 do $$
 declare t text;
 begin
   foreach t in array array[
-    'foods','food_log','weight_log','workouts','workout_sets','targets','settings','meals'
+    'foods','food_log','weight_log','workouts','workout_sets','targets','settings','meals','day_status'
   ] loop
     execute format(
       'create policy %1$I_owner on public.%1$I

@@ -75,7 +75,7 @@ export function WeightChart({ series, height = 180 }) {
  * Daily calories as bars, with a dashed target line. Bars over target turn amber.
  * @param {{series: {logged_on:string, kcal:number}[], target:number}} props
  */
-export function CaloriesChart({ series, target, days = 14, height = 180 }) {
+export function CaloriesChart({ series, target, statusByDate = {}, days = 14, height = 180 }) {
   const W = 360
   const H = height
   const data = (series || []).slice(-days)
@@ -107,6 +107,9 @@ export function CaloriesChart({ series, target, days = 14, height = 180 }) {
           const cx = PAD.left + slot * i + slot / 2
           const over = target && d.kcal > target
           const top = y(d.kcal)
+          const incomplete = statusByDate[d.logged_on] === 'partial' || statusByDate[d.logged_on] === 'unlogged'
+          // Incomplete days are dimmed: they don't feed the adaptive average.
+          const fill = incomplete ? '#475569' : over ? '#f59e0b' : '#0ea5e9'
           return (
             <rect
               key={d.logged_on}
@@ -115,10 +118,12 @@ export function CaloriesChart({ series, target, days = 14, height = 180 }) {
               width={barW}
               height={Math.max(0, PAD.top + innerH - top)}
               rx="2"
-              fill={over ? '#f59e0b' : '#0ea5e9'}
-              opacity="0.9"
+              fill={fill}
+              opacity={incomplete ? 0.6 : 0.9}
             >
-              <title>{`${prettyDate(d.logged_on)}: ${Math.round(d.kcal)} kcal`}</title>
+              <title>{`${prettyDate(d.logged_on)}: ${Math.round(d.kcal)} kcal${
+                incomplete ? ` (${statusByDate[d.logged_on]})` : ''
+              }`}</title>
             </rect>
           )
         })}
