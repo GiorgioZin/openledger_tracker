@@ -4,6 +4,7 @@ import { todayISO, prettyDate, addDaysISO } from '../lib/dates.js'
 import { searchFoods, lookupBarcode } from '../lib/openfoodfacts.js'
 import { useDayTotals } from '../hooks/useDayTotals.js'
 import { useQuickAdd } from '../hooks/useQuickAdd.js'
+import BarcodeScanner from './BarcodeScanner.jsx'
 
 export default function FoodPage() {
   const today = todayISO()
@@ -215,21 +216,21 @@ function FoodSearch({ onPick }) {
   const [results, setResults] = useState([])
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
+  const [scanning, setScanning] = useState(false)
 
-  async function run(e) {
-    e.preventDefault()
-    if (!q.trim()) return
+  async function search(query) {
+    const text = query.trim()
+    if (!text) return
     setBusy(true)
     setErr(null)
     try {
       // A pure-digit query is treated as a barcode.
-      const isBarcode = /^\d{6,}$/.test(q.trim())
-      if (isBarcode) {
-        const p = await lookupBarcode(q.trim())
+      if (/^\d{6,}$/.test(text)) {
+        const p = await lookupBarcode(text)
         setResults(p ? [p] : [])
         if (!p) setErr('No product found for that barcode.')
       } else {
-        setResults(await searchFoods(q.trim()))
+        setResults(await searchFoods(text))
       }
     } catch (e2) {
       setErr(e2.message)
@@ -238,16 +239,39 @@ function FoodSearch({ onPick }) {
     }
   }
 
+  async function onScanned(code) {
+    setScanning(false)
+    setQ(code)
+    await search(code)
+  }
+
   return (
     <div>
-      <form onSubmit={run} className="flex gap-2">
+      {scanning && <BarcodeScanner onDetected={onScanned} onClose={() => setScanning(false)} />}
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          search(q)
+        }}
+        className="flex gap-2"
+      >
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           inputMode="search"
           placeholder="Search or paste a barcode"
-          className="flex-1 rounded-lg bg-slate-800 px-4 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className="min-w-0 flex-1 rounded-lg bg-slate-800 px-4 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
         />
+        <button
+          type="button"
+          onClick={() => setScanning(true)}
+          className="rounded-lg bg-slate-700 px-3 font-semibold text-white"
+          title="Scan a barcode"
+          aria-label="Scan a barcode"
+        >
+          📷
+        </button>
         <button
           type="submit"
           disabled={busy}
