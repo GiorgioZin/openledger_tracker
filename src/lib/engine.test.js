@@ -85,4 +85,29 @@ describe('computeTargets', () => {
     const r = computeTargets({ weights, dailyIntake, goalRatePct: 0 })
     expect(r.tdee_source).toBe('balance')
   })
+
+  it('supports an absolute kg/week goal rate', () => {
+    const weights = series('2026-01-01', Array.from({ length: 15 }, () => 80))
+    const dailyIntake = weights.map((w) => ({ logged_on: w.logged_on, kcal: 2500 }))
+    const maintain = computeTargets({ weights, dailyIntake, goalRatePct: 0 })
+    const cut = computeTargets({ weights, dailyIntake, goalRateUnit: 'kg', goalRateKg: -0.5 })
+    expect(cut.target_source).toBe('dynamic')
+    // -0.5 kg/week ≈ -550 kcal/day below maintenance.
+    expect(maintain.target_kcal - cut.target_kcal).toBeCloseTo(Math.round((0.5 * 7700) / 7), -1)
+  })
+
+  it('uses fixed targets in custom mode (ignores goal rate)', () => {
+    const weights = series('2026-01-01', Array.from({ length: 15 }, () => 80))
+    const r = computeTargets({
+      weights,
+      dailyIntake: [],
+      tdeeMode: 'custom',
+      custom: { kcal: 2200, protein_g: 180, carb_g: 200, fat_g: 70 },
+    })
+    expect(r.target_source).toBe('custom')
+    expect(r.target_kcal).toBe(2200)
+    expect(r.protein_g).toBe(180)
+    expect(r.carb_g).toBe(200)
+    expect(r.fat_g).toBe(70)
+  })
 })

@@ -89,7 +89,21 @@ function seed() {
     workout_sets: [],
     targets: [],
     meals,
-    settings: [{ user_id: DEMO_USER.id, goal_rate_pct: -0.5, goal_weight_kg: 76 }],
+    day_status: [],
+    settings: [
+      {
+        user_id: DEMO_USER.id,
+        goal_rate_pct: -0.5,
+        goal_rate_unit: 'pct',
+        goal_rate_kg: -0.4,
+        goal_weight_kg: 76,
+        tdee_mode: 'dynamic',
+        custom_kcal: null,
+        custom_protein_g: null,
+        custom_carb_g: null,
+        custom_fat_g: null,
+      },
+    ],
   }
 }
 

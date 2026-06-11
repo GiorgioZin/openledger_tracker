@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { todayISO, prettyDate } from '../lib/dates.js'
 import { useTargets } from '../hooks/useTargets.js'
@@ -13,12 +13,11 @@ export default function DashboardPage() {
     targets,
     weightSeries,
     intakeSeries,
-    goalRatePct,
+    statusByDate,
     goalWeightKg,
     loading,
     error,
-    saveGoalRate,
-    saveGoalWeight,
+    setDayStatus,
   } = useTargets()
   const { totals } = useDayTotals(today)
 
@@ -59,7 +58,14 @@ export default function DashboardPage() {
           <div className="space-y-4 lg:min-w-0 lg:flex-1">
             <section className="rounded-2xl bg-slate-800/60 p-4">
               <div className="flex items-baseline justify-between">
-                <span className="text-sm text-slate-400">Calories</span>
+                <span className="text-sm text-slate-400">
+                  Calories
+                  {targets.target_source === 'custom' && (
+                    <span className="ml-2 rounded bg-slate-700 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-300">
+                      custom
+                    </span>
+                  )}
+                </span>
                 <span className="tabular-nums text-slate-400">
                   <span className="text-lg font-semibold text-white">
                     {Math.round(totals.kcal)}
@@ -80,23 +86,28 @@ export default function DashboardPage() {
               </p>
             </section>
 
+            <DayStatusControl
+              status={statusByDate[today] || 'complete'}
+              onChange={(s) => setDayStatus(today, s)}
+            />
+
             <div className="grid gap-4 xl:grid-cols-2">
               <Card title="Weight trend" subtitle={`${targets.trend_kg} kg`}>
                 <WeightChart series={weightSeries} />
               </Card>
               <Card title="Calorie history" subtitle="last 14 days">
-                <CaloriesChart series={intakeSeries} target={targets.target_kcal} />
+                <CaloriesChart
+                  series={intakeSeries}
+                  target={targets.target_kcal}
+                  statusByDate={statusByDate}
+                />
               </Card>
             </div>
 
-            <InsightsCard
-              insights={insights}
-              goalWeightKg={goalWeightKg}
-              onSaveGoalWeight={saveGoalWeight}
-            />
+            <InsightsCard insights={insights} goalWeightKg={goalWeightKg} />
           </div>
 
-          {/* Secondary column — at-a-glance stats, macros, goal. */}
+          {/* Secondary column — at-a-glance stats, macros. */}
           <aside className="mt-4 space-y-4 lg:mt-0 lg:w-80 lg:shrink-0">
             <section className="grid grid-cols-3 gap-3">
               <Stat label="Trend" value={`${targets.trend_kg} kg`} />
@@ -117,7 +128,17 @@ export default function DashboardPage() {
               <ProgressBar label="Fat" value={totals.fat_g} target={targets.fat_g} color="bg-sky-500" />
             </section>
 
-            <GoalRate value={goalRatePct} onSave={saveGoalRate} />
+            <Link
+              to="/settings"
+              className="block rounded-2xl bg-slate-800/60 p-4 text-sm text-slate-300 hover:bg-slate-800"
+            >
+              <span className="font-medium">Goal & TDEE</span>
+              <span className="mt-0.5 block text-xs text-slate-500">
+                {targets.target_source === 'custom'
+                  ? 'Custom targets — tap to edit'
+                  : 'Dynamic — adjust goal rate & mode →'}
+              </span>
+            </Link>
           </aside>
         </div>
       )}
@@ -125,7 +146,37 @@ export default function DashboardPage() {
   )
 }
 
-function InsightsCard({ insights, goalWeightKg, onSaveGoalWeight }) {
+const DAY_STATUSES = [
+  { value: 'complete', label: 'Complete' },
+  { value: 'partial', label: 'Partial' },
+  { value: 'unlogged', label: 'Unlogged' },
+]
+
+function DayStatusControl({ status, onChange }) {
+  return (
+    <section className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-slate-800/60 px-4 py-3">
+      <div>
+        <span className="text-sm text-slate-300">Today’s log</span>
+        <span className="ml-2 text-xs text-slate-500">partial / unlogged days skip the TDEE average</span>
+      </div>
+      <div className="inline-flex rounded-lg bg-slate-900 p-1 ring-1 ring-slate-700">
+        {DAY_STATUSES.map((s) => (
+          <button
+            key={s.value}
+            onClick={() => onChange(s.value)}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+              status === s.value ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function InsightsCard({ insights, goalWeightKg }) {
   if (!insights) return null
   const { avgIntake, adherencePct, loggedDays, onTargetDays, projWeight4 } = insights
 
@@ -160,7 +211,6 @@ function InsightsCard({ insights, goalWeightKg, onSaveGoalWeight }) {
         />
         <Mini label={goalWeightKg == null ? 'Projection' : `Goal ${goalWeightKg}kg`} value={projection} small />
       </div>
-      <GoalWeight value={goalWeightKg} onSave={onSaveGoalWeight} />
     </section>
   )
 }
@@ -173,38 +223,6 @@ function Mini({ label, value, sub, small }) {
         {value}
       </div>
       {sub && <div className="text-[11px] text-slate-500">{sub}</div>}
-    </div>
-  )
-}
-
-function GoalWeight({ value, onSave }) {
-  const [kg, setKg] = useState(value ?? '')
-  const [saving, setSaving] = useState(false)
-  const parsed = kg === '' ? null : parseFloat(kg)
-  const dirty = (parsed ?? null) !== (value ?? null)
-  return (
-    <div className="mt-3 flex items-center gap-3 border-t border-slate-700/60 pt-3">
-      <label className="text-sm text-slate-400">Goal weight</label>
-      <input
-        type="number"
-        step="0.1"
-        inputMode="decimal"
-        value={kg}
-        placeholder="kg"
-        onChange={(e) => setKg(e.target.value)}
-        className="w-24 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
-      />
-      <button
-        onClick={async () => {
-          setSaving(true)
-          await onSave(parsed)
-          setSaving(false)
-        }}
-        disabled={saving || !dirty}
-        className="ml-auto rounded-lg bg-slate-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
-      >
-        {saving ? '…' : 'Set'}
-      </button>
     </div>
   )
 }
@@ -228,41 +246,6 @@ function Stat({ label, value, sub }) {
       <div className="mt-1 text-lg font-semibold tabular-nums text-white">{value}</div>
       {sub && <div className="text-xs text-slate-500">{sub}</div>}
     </div>
-  )
-}
-
-function GoalRate({ value, onSave }) {
-  const [rate, setRate] = useState(value)
-  const [saving, setSaving] = useState(false)
-  return (
-    <section className="rounded-2xl bg-slate-800/60 p-4">
-      <label className="text-sm text-slate-300">
-        Goal rate <span className="text-slate-500">(% bodyweight / week)</span>
-      </label>
-      <div className="mt-2 flex items-center gap-3">
-        <input
-          type="number"
-          step="0.1"
-          value={rate}
-          onChange={(e) => setRate(parseFloat(e.target.value) || 0)}
-          className="w-24 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
-        />
-        <span className="text-xs text-slate-500">
-          negative = cut, positive = bulk
-        </span>
-        <button
-          onClick={async () => {
-            setSaving(true)
-            await onSave(rate)
-            setSaving(false)
-          }}
-          className="ml-auto rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-          disabled={saving || rate === value}
-        >
-          {saving ? '…' : 'Save'}
-        </button>
-      </div>
-    </section>
   )
 }
 

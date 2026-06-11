@@ -56,7 +56,16 @@ function mean(xs) {
  *   weight_kg:number
  * }}
  */
-export function computeTargets({ weights, dailyIntake, goalRatePct = 0, windowDays = 14 }) {
+export function computeTargets({
+  weights,
+  dailyIntake,
+  goalRatePct = 0,
+  goalRateKg = 0,
+  goalRateUnit = 'pct',
+  tdeeMode = 'dynamic',
+  custom = null,
+  windowDays = 14,
+}) {
   if (!weights || weights.length === 0) return null
 
   const trendSeries = ewmaTrend(weights)
@@ -96,11 +105,36 @@ export function computeTargets({ weights, dailyIntake, goalRatePct = 0, windowDa
     tdee_source = 'estimate'
   }
 
-  const targetKcal = tdee + (goalRatePct / 100) * weight * KCAL_PER_KG / 7
+  let target_kcal
+  let protein_g
+  let fat_g
+  let carb_g
+  let target_source
 
-  const protein_g = round1(2.0 * weight)
-  const fat_g = round1(0.9 * weight)
-  const carb_g = Math.max(0, round1((targetKcal - protein_g * 4 - fat_g * 9) / 4))
+  if (tdeeMode === 'custom' && custom) {
+    // Fixed targets the user set by hand; macros fall back to bodyweight-based
+    // defaults if a field is left blank.
+    target_source = 'custom'
+    target_kcal = Math.round(Number(custom.kcal) || 0)
+    protein_g = custom.protein_g != null ? round1(Number(custom.protein_g)) : round1(2.0 * weight)
+    fat_g = custom.fat_g != null ? round1(Number(custom.fat_g)) : round1(0.9 * weight)
+    carb_g =
+      custom.carb_g != null
+        ? round1(Number(custom.carb_g))
+        : Math.max(0, round1((target_kcal - protein_g * 4 - fat_g * 9) / 4))
+  } else {
+    // Adaptive target: TDEE plus the daily energy delta implied by the goal
+    // rate, expressed either as %/week of bodyweight or as kg/week.
+    target_source = 'dynamic'
+    const deltaPerDay =
+      goalRateUnit === 'kg'
+        ? (goalRateKg * KCAL_PER_KG) / 7
+        : ((goalRatePct / 100) * weight * KCAL_PER_KG) / 7
+    target_kcal = Math.round(tdee + deltaPerDay)
+    protein_g = round1(2.0 * weight)
+    fat_g = round1(0.9 * weight)
+    carb_g = Math.max(0, round1((target_kcal - protein_g * 4 - fat_g * 9) / 4))
+  }
 
   return {
     weight_kg: round1(weight),
@@ -109,7 +143,8 @@ export function computeTargets({ weights, dailyIntake, goalRatePct = 0, windowDa
     tdee_est: Math.round(tdee),
     tdee_source,
     intake_days: recentIntake.length,
-    target_kcal: Math.round(targetKcal),
+    target_kcal,
+    target_source,
     protein_g,
     carb_g,
     fat_g,
