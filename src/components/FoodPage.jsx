@@ -22,7 +22,8 @@ export default function FoodPage() {
   const today = todayISO()
   const [date, setDate] = useState(today)
   const { totals, rows, reload } = useDayTotals(date)
-  const { recents, meals, reload: reloadQuick, logItems, saveMeal, deleteMeal } = useQuickAdd()
+  const { recents, meals, favorites, reload: reloadQuick, logItems, saveMeal, deleteMeal, addFavorite, removeFavorite } =
+    useQuickAdd()
   const { recipes, create: createRecipe, remove: removeRecipe } = useRecipes()
   const [selected, setSelected] = useState(null) // food awaiting a grams entry
   const [quickAdd, setQuickAdd] = useState(false)
@@ -61,11 +62,14 @@ export default function FoodPage() {
       <QuickAdd
         recents={recents}
         meals={meals}
+        favorites={favorites}
         canSaveToday={rows.length > 0}
         onPickRecent={setSelected}
         onLogMeal={logMeal}
         onDeleteMeal={deleteMeal}
         onSaveToday={saveDayAsMeal}
+        onAddFav={addFavorite}
+        onRemoveFav={removeFavorite}
       />
 
       <RecipesPanel
@@ -158,23 +162,57 @@ function DateNav({ date, today, onChange }) {
   )
 }
 
-function QuickAdd({ recents, meals, canSaveToday, onPickRecent, onLogMeal, onDeleteMeal, onSaveToday }) {
-  if (!recents.length && !meals.length && !canSaveToday) return null
+function FoodChip({ food, onPick, starred, onToggleStar }) {
+  return (
+    <span className="inline-flex items-center rounded-full bg-slate-900 ring-1 ring-slate-700 hover:ring-sky-500">
+      <button
+        onClick={() => onPick(food)}
+        className="py-1.5 pl-3 pr-1 text-sm text-slate-200"
+        title={`${food.kcal} kcal/100g · default ${food.defaultGrams} g`}
+      >
+        {food.name}
+      </button>
+      <button
+        onClick={() => onToggleStar(food)}
+        className={`py-1.5 pl-1 pr-2.5 text-sm ${starred ? 'text-amber-400' : 'text-slate-600 hover:text-slate-300'}`}
+        aria-label={starred ? 'Unfavorite' : 'Favorite'}
+      >
+        {starred ? '★' : '☆'}
+      </button>
+    </span>
+  )
+}
+
+function QuickAdd({ recents, meals, favorites, canSaveToday, onPickRecent, onLogMeal, onDeleteMeal, onSaveToday, onAddFav, onRemoveFav }) {
+  if (!recents.length && !meals.length && !favorites.length && !canSaveToday) return null
+  const favNames = new Set(favorites.map((f) => f.name.toLowerCase()))
+  const toggle = (food) =>
+    favNames.has(food.name.toLowerCase()) ? onRemoveFav(food.name) : onAddFav(food)
   return (
     <div className="space-y-3 rounded-2xl bg-slate-800/60 p-4">
+      {favorites.length > 0 && (
+        <div>
+          <h2 className="mb-2 text-sm font-medium text-slate-300">Favorites</h2>
+          <div className="flex flex-wrap gap-2">
+            {favorites.map((f) => (
+              <FoodChip key={f.name} food={f} onPick={onPickRecent} starred onToggleStar={toggle} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {recents.length > 0 && (
         <div>
           <h2 className="mb-2 text-sm font-medium text-slate-300">Recent</h2>
           <div className="flex flex-wrap gap-2">
             {recents.map((f) => (
-              <button
+              <FoodChip
                 key={f.name}
-                onClick={() => onPickRecent(f)}
-                className="rounded-full bg-slate-900 px-3 py-1.5 text-sm text-slate-200 ring-1 ring-slate-700 hover:ring-sky-500"
-                title={`${f.kcal} kcal/100g · default ${f.defaultGrams} g`}
-              >
-                {f.name}
-              </button>
+                food={f}
+                onPick={onPickRecent}
+                starred={favNames.has(f.name.toLowerCase())}
+                onToggleStar={toggle}
+              />
             ))}
           </div>
         </div>

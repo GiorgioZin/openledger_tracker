@@ -148,6 +148,24 @@ create table if not exists public.meals (
   created_at timestamptz not null default now()
 );
 
+-- Favorite foods: pinned items (per 100 g) for instant logging.
+create table if not exists public.favorites (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name          text not null,
+  kcal          numeric not null default 0,
+  protein_g     numeric not null default 0,
+  carb_g        numeric not null default 0,
+  fat_g         numeric not null default 0,
+  fiber_g       numeric not null default 0,
+  sugar_g       numeric not null default 0,
+  satfat_g      numeric not null default 0,
+  sodium_mg     numeric not null default 0,
+  default_grams numeric not null default 100,
+  created_at    timestamptz not null default now(),
+  unique (user_id, name)
+);
+
 -- Recipes: composite foods made of ingredients, divided into servings. Logging
 -- a serving adds (recipe total / servings) to the food log.
 create table if not exists public.recipes (
@@ -171,6 +189,7 @@ create index if not exists meals_user_idx             on public.meals (user_id, 
 create index if not exists measurements_user_kind_idx  on public.measurements (user_id, kind, logged_on);
 create index if not exists recipes_user_idx            on public.recipes (user_id, created_at desc);
 create index if not exists fasts_user_idx              on public.fasts (user_id, started_at desc);
+create index if not exists favorites_user_idx          on public.favorites (user_id, created_at desc);
 
 -- ---------------------------------------------------------------------------
 -- Row-level security: a user only ever sees their own rows.
@@ -187,12 +206,13 @@ alter table public.day_status   enable row level security;
 alter table public.measurements enable row level security;
 alter table public.recipes      enable row level security;
 alter table public.fasts        enable row level security;
+alter table public.favorites    enable row level security;
 
 do $$
 declare t text;
 begin
   foreach t in array array[
-    'foods','food_log','weight_log','workouts','workout_sets','targets','settings','meals','day_status','measurements','recipes','fasts'
+    'foods','food_log','weight_log','workouts','workout_sets','targets','settings','meals','day_status','measurements','recipes','fasts','favorites'
   ] loop
     execute format(
       'create policy %1$I_owner on public.%1$I

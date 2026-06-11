@@ -6,18 +6,36 @@ import { todayISO } from '../lib/dates.js'
 //  - `recents`: distinct recently-logged foods, reconstructed to per-100g so
 //    they can be re-logged at any portion (no schema change needed).
 //  - `meals`: saved bundles of items you can re-log in one tap.
+function favFromRow(r) {
+  return {
+    name: r.name,
+    kcal: Number(r.kcal),
+    protein_g: Number(r.protein_g),
+    carb_g: Number(r.carb_g),
+    fat_g: Number(r.fat_g),
+    fiber_g: Number(r.fiber_g || 0),
+    sugar_g: Number(r.sugar_g || 0),
+    satfat_g: Number(r.satfat_g || 0),
+    sodium_mg: Number(r.sodium_mg || 0),
+    defaultGrams: Number(r.default_grams) || 100,
+  }
+}
+
 export function useQuickAdd(limit = 8) {
   const [recents, setRecents] = useState([])
   const [meals, setMeals] = useState([])
+  const [favorites, setFavorites] = useState([])
 
   const load = useCallback(async () => {
-    const [{ data: log }, { data: savedMeals }] = await Promise.all([
+    const [{ data: log }, { data: savedMeals }, { data: favs }] = await Promise.all([
       supabase
         .from('food_log')
         .select('name, grams, kcal, protein_g, carb_g, fat_g, fiber_g, sugar_g, satfat_g, sodium_mg, created_at')
         .order('created_at', { ascending: false }),
       supabase.from('meals').select('*').order('created_at', { ascending: false }),
+      supabase.from('favorites').select('*').order('created_at', { ascending: false }),
     ])
+    setFavorites((favs || []).map(favFromRow))
 
     // Most-recent distinct foods, normalized back to per-100g.
     const seen = new Set()
@@ -105,5 +123,34 @@ export function useQuickAdd(limit = 8) {
     [load],
   )
 
-  return { recents, meals, reload: load, logItems, saveMeal, deleteMeal }
+  const addFavorite = useCallback(
+    async (food) => {
+      const { data: u } = await supabase.auth.getUser()
+      await supabase.from('favorites').insert({
+        user_id: u?.user?.id,
+        name: food.name,
+        kcal: Number(food.kcal) || 0,
+        protein_g: Number(food.protein_g) || 0,
+        carb_g: Number(food.carb_g) || 0,
+        fat_g: Number(food.fat_g) || 0,
+        fiber_g: Number(food.fiber_g) || 0,
+        sugar_g: Number(food.sugar_g) || 0,
+        satfat_g: Number(food.satfat_g) || 0,
+        sodium_mg: Number(food.sodium_mg) || 0,
+        default_grams: Number(food.defaultGrams) || 100,
+      })
+      await load()
+    },
+    [load],
+  )
+
+  const removeFavorite = useCallback(
+    async (name) => {
+      await supabase.from('favorites').delete().eq('name', name)
+      await load()
+    },
+    [load],
+  )
+
+  return { recents, meals, favorites, reload: load, logItems, saveMeal, deleteMeal, addFavorite, removeFavorite }
 }
