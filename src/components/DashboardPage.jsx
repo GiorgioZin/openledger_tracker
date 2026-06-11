@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase.js'
 import { todayISO, prettyDate } from '../lib/dates.js'
 import { useTargets } from '../hooks/useTargets.js'
 import { useDayTotals } from '../hooks/useDayTotals.js'
-import { computeInsights, computeStreak } from '../lib/insights.js'
+import { computeInsights, computeStreak, weeklyBudget } from '../lib/insights.js'
 import ProgressBar from './ProgressBar.jsx'
 import { WeightChart, CaloriesChart } from './Charts.jsx'
 
@@ -34,6 +34,9 @@ export default function DashboardPage() {
   const loggedDates = intakeSeries.filter((d) => Number(d.kcal) > 0).map((d) => d.logged_on)
   const streak = computeStreak(loggedDates, today)
   const loggedToday = loggedDates.includes(today)
+  const budget = targets
+    ? weeklyBudget({ intakeSeries, statusByDate, target: targets.target_kcal, today })
+    : null
 
   return (
     <div className="space-y-6">
@@ -113,6 +116,8 @@ export default function DashboardPage() {
               status={statusByDate[today] || 'complete'}
               onChange={(s) => setDayStatus(today, s)}
             />
+
+            {budget && <WeeklyBudgetCard budget={budget} />}
 
             <div className="grid gap-4 xl:grid-cols-2">
               <Card title="Weight trend" subtitle={`${targets.trend_kg} kg`}>
@@ -194,6 +199,36 @@ function DayStatusControl({ status, onChange }) {
             {s.label}
           </button>
         ))}
+      </div>
+    </section>
+  )
+}
+
+function WeeklyBudgetCard({ budget }) {
+  const { weeklyTarget, consumed, remaining, bank, todayAdjusted } = budget
+  const pct = Math.min(100, (consumed / weeklyTarget) * 100)
+  const over = consumed > weeklyTarget
+  return (
+    <section className="rounded-2xl bg-slate-800/60 p-4">
+      <div className="mb-2 flex items-baseline justify-between">
+        <h2 className="text-sm font-medium text-slate-300">Weekly budget</h2>
+        <span className="text-xs text-slate-500 tabular-nums">
+          {consumed.toLocaleString()} / {weeklyTarget.toLocaleString()} kcal
+        </span>
+      </div>
+      <div className="h-2.5 overflow-hidden rounded-full bg-slate-700">
+        <div
+          className={`h-full rounded-full ${over ? 'bg-amber-500' : 'bg-emerald-500'}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="mt-2 flex items-center justify-between text-xs">
+        <span className={bank >= 0 ? 'text-emerald-400' : 'text-amber-400'}>
+          {bank >= 0 ? `Banked +${bank.toLocaleString()}` : `Over by ${Math.abs(bank).toLocaleString()}`} kcal
+        </span>
+        <span className="text-slate-400">
+          Adjusted today <span className="font-semibold tabular-nums text-white">{todayAdjusted.toLocaleString()}</span> kcal
+        </span>
       </div>
     </section>
   )
