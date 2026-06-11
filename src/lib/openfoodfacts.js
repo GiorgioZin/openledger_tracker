@@ -50,19 +50,42 @@ function localSearch(query) {
   return DEMO_CATALOG.filter((f) => f.name.toLowerCase().includes(q))
 }
 
+// Open Food Facts is crowd-sourced and noisy: many entries are unnamed, have
+// junk calories, or are near-duplicates. Rank by popularity and clean up.
+function cleanResults(products) {
+  const seen = new Set()
+  const out = []
+  for (const p of products) {
+    const f = mapProduct(p)
+    if (!f) continue
+    // Drop unusable/implausible entries.
+    if (!f.name || f.name === 'Unknown product' || f.name.length < 2) continue
+    if (!(f.kcal > 0) || f.kcal > 900) continue // per-100g sanity (olive oil ≈ 884)
+    // Skip rows with no macro data at all (usually incomplete junk).
+    if (f.protein_g === 0 && f.carb_g === 0 && f.fat_g === 0) continue
+    const key = `${f.name.toLowerCase().trim()}|${(f.brand || '').toLowerCase().trim()}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(f)
+    if (out.length >= 25) break
+  }
+  return out
+}
+
 async function offSearch(query, signal) {
   const params = new URLSearchParams({
     search_terms: query,
     search_simple: '1',
     action: 'process',
     json: '1',
-    page_size: '25',
+    page_size: '60',
+    sort_by: 'unique_scans_n', // most-scanned (popular) first
     fields: 'code,product_name,generic_name,brands,nutriments',
   })
   const res = await fetch(`${SEARCH_URL}?${params}`, { signal })
   if (!res.ok) throw new Error(`Open Food Facts search failed (${res.status})`)
   const data = await res.json()
-  return (data.products || []).map(mapProduct).filter(Boolean)
+  return cleanResults(data.products || [])
 }
 
 export async function searchFoods(query, { signal } = {}) {
