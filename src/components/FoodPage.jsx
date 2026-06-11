@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { todayISO, prettyDate, addDaysISO } from '../lib/dates.js'
 import { searchFoods, lookupBarcode } from '../lib/openfoodfacts.js'
@@ -469,7 +469,7 @@ function FoodSearch({ onPick }) {
   const [err, setErr] = useState(null)
   const [scanning, setScanning] = useState(false)
 
-  async function search(query) {
+  async function search(query, signal) {
     const text = query.trim()
     if (!text) return
     setBusy(true)
@@ -477,18 +477,31 @@ function FoodSearch({ onPick }) {
     try {
       // A pure-digit query is treated as a barcode.
       if (/^\d{6,}$/.test(text)) {
-        const p = await lookupBarcode(text)
+        const p = await lookupBarcode(text, { signal })
         setResults(p ? [p] : [])
         if (!p) setErr('No product found for that barcode.')
       } else {
-        setResults(await searchFoods(text))
+        setResults(await searchFoods(text, { signal }))
       }
     } catch (e2) {
-      setErr(e2.message)
+      if (e2?.name !== 'AbortError') setErr(e2.message)
     } finally {
       setBusy(false)
     }
   }
+
+  // Search as you type (debounced). Barcodes still use the Go button / scanner.
+  useEffect(() => {
+    const text = q.trim()
+    if (text.length < 2 || /^\d{4,}$/.test(text)) return undefined
+    const ctrl = new AbortController()
+    const t = setTimeout(() => search(text, ctrl.signal), 400)
+    return () => {
+      clearTimeout(t)
+      ctrl.abort()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q])
 
   async function onScanned(code) {
     setScanning(false)
@@ -532,6 +545,7 @@ function FoodSearch({ onPick }) {
         </button>
       </form>
 
+      {busy && <p className="mt-2 text-xs text-slate-500">Searching…</p>}
       {err && <p className="mt-2 text-sm text-red-400">{err}</p>}
 
       <ul className="mt-3 space-y-2">

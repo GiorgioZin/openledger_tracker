@@ -6,8 +6,7 @@ import { useTargets } from '../hooks/useTargets.js'
 import { useDayTotals } from '../hooks/useDayTotals.js'
 import { useFasting } from '../hooks/useFasting.js'
 import { computeInsights, computeStreak, weeklyBudget } from '../lib/insights.js'
-import ProgressBar from './ProgressBar.jsx'
-import { WeightChart, CaloriesChart } from './Charts.jsx'
+import { WeightChart, CaloriesChart, Ring } from './Charts.jsx'
 
 export default function DashboardPage() {
   const today = todayISO()
@@ -153,11 +152,7 @@ export default function DashboardPage() {
               />
             </section>
 
-            <section className="space-y-3 rounded-2xl bg-slate-800/60 p-4">
-              <ProgressBar label="Protein" value={totals.protein_g} target={targets.protein_g} color="bg-rose-500" />
-              <ProgressBar label="Carbs" value={totals.carb_g} target={targets.carb_g} color="bg-amber-500" />
-              <ProgressBar label="Fat" value={totals.fat_g} target={targets.fat_g} color="bg-sky-500" />
-            </section>
+            <RemainingCard totals={totals} targets={targets} />
 
             <FastingCard {...fasting} />
 
@@ -281,6 +276,21 @@ function FastingCard({ openFast, targetHours, startFast, endFast, saveTarget }) 
       >
         Start fast
       </button>
+    </section>
+  )
+}
+
+function RemainingCard({ totals, targets }) {
+  const left = (t, v) => Math.max(0, Math.round(t - v))
+  return (
+    <section className="rounded-2xl bg-slate-800/60 p-4">
+      <h2 className="mb-3 text-sm font-medium text-slate-300">Remaining today</h2>
+      <div className="grid grid-cols-4 gap-2">
+        <Ring consumed={totals.kcal} max={targets.target_kcal} color="#10b981" label="kcal" center={left(targets.target_kcal, totals.kcal)} />
+        <Ring consumed={totals.protein_g} max={targets.protein_g} color="#f43f5e" label="Protein" center={`${left(targets.protein_g, totals.protein_g)}`} />
+        <Ring consumed={totals.carb_g} max={targets.carb_g} color="#f59e0b" label="Carbs" center={`${left(targets.carb_g, totals.carb_g)}`} />
+        <Ring consumed={totals.fat_g} max={targets.fat_g} color="#0ea5e9" label="Fat" center={`${left(targets.fat_g, totals.fat_g)}`} />
+      </div>
     </section>
   )
 }
