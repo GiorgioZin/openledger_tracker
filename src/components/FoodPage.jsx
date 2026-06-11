@@ -7,6 +7,17 @@ import { useQuickAdd } from '../hooks/useQuickAdd.js'
 import { useRecipes, recipeServing } from '../hooks/useRecipes.js'
 import BarcodeScanner from './BarcodeScanner.jsx'
 
+const MEALS = ['breakfast', 'lunch', 'dinner', 'snack']
+
+// A sensible default meal category based on the time of day.
+export function mealForNow(d = new Date()) {
+  const h = d.getHours()
+  if (h < 11) return 'breakfast'
+  if (h < 15) return 'lunch'
+  if (h < 21) return 'dinner'
+  return 'snack'
+}
+
 export default function FoodPage() {
   const today = todayISO()
   const [date, setDate] = useState(today)
@@ -512,6 +523,7 @@ function FoodSearch({ onPick }) {
 
 function LogForm({ food, dateISO, onCancel, onLogged }) {
   const [grams, setGrams] = useState(food.defaultGrams ?? 100)
+  const [meal, setMeal] = useState(mealForNow())
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
   const factor = (Number(grams) || 0) / 100
@@ -553,6 +565,7 @@ function LogForm({ food, dateISO, onCancel, onLogged }) {
         protein_g: round(food.protein_g * factor),
         carb_g: round(food.carb_g * factor),
         fat_g: round(food.fat_g * factor),
+        meal,
       })
       if (error) throw error
       await onLogged()
@@ -576,6 +589,22 @@ function LogForm({ food, dateISO, onCancel, onLogged }) {
         onChange={(e) => setGrams(e.target.value)}
         className="mt-1 w-full rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
       />
+
+      <label className="mt-3 block text-sm text-slate-300">Meal</label>
+      <div className="mt-1 inline-flex flex-wrap gap-1 rounded-lg bg-slate-900 p-1 ring-1 ring-slate-700">
+        {MEALS.map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMeal(m)}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
+              meal === m ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            {m}
+          </button>
+        ))}
+      </div>
 
       <div className="mt-3 grid grid-cols-4 gap-2 text-center text-sm">
         <Mac k="kcal" v={round(food.kcal * factor)} />
@@ -611,6 +640,8 @@ function Mac({ k, v }) {
   )
 }
 
+const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'other']
+
 function LoggedList({ rows, onChange }) {
   async function remove(id) {
     await supabase.from('food_log').delete().eq('id', id)
@@ -619,26 +650,52 @@ function LoggedList({ rows, onChange }) {
   if (!rows.length) {
     return <p className="text-sm text-slate-500">Nothing logged yet today.</p>
   }
+
+  // Group by meal, preserving a natural meal order.
+  const groups = new Map()
+  for (const r of rows) {
+    const key = MEALS.includes(r.meal) ? r.meal : 'other'
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(r)
+  }
+  const ordered = MEAL_ORDER.filter((m) => groups.has(m))
+
   return (
-    <ul className="space-y-2">
-      {rows.map((r) => (
-        <li
-          key={r.id}
-          className="flex items-center justify-between rounded-lg bg-slate-800/60 px-4 py-3"
-        >
-          <span>
-            <span className="block text-white">{r.name}</span>
-            <span className="block text-xs text-slate-400">
-              {Math.round(r.grams)} g · {Math.round(r.kcal)} kcal · P
-              {Math.round(r.protein_g)} C{Math.round(r.carb_g)} F{Math.round(r.fat_g)}
-            </span>
-          </span>
-          <button onClick={() => remove(r.id)} className="text-slate-500">
-            ✕
-          </button>
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-4">
+      {ordered.map((meal) => {
+        const items = groups.get(meal)
+        const kcal = Math.round(items.reduce((a, r) => a + Number(r.kcal), 0))
+        return (
+          <div key={meal}>
+            <div className="mb-1 flex items-baseline justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                {meal === 'other' ? 'Uncategorized' : meal}
+              </h3>
+              <span className="text-xs tabular-nums text-slate-500">{kcal} kcal</span>
+            </div>
+            <ul className="space-y-2">
+              {items.map((r) => (
+                <li
+                  key={r.id}
+                  className="flex items-center justify-between rounded-lg bg-slate-800/60 px-4 py-3"
+                >
+                  <span>
+                    <span className="block text-white">{r.name}</span>
+                    <span className="block text-xs text-slate-400">
+                      {Math.round(r.grams)} g · {Math.round(r.kcal)} kcal · P
+                      {Math.round(r.protein_g)} C{Math.round(r.carb_g)} F{Math.round(r.fat_g)}
+                    </span>
+                  </span>
+                  <button onClick={() => remove(r.id)} className="text-slate-500">
+                    ✕
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
