@@ -10,6 +10,7 @@ export function useTargets() {
   const [weightSeries, setWeightSeries] = useState([])
   const [intakeSeries, setIntakeSeries] = useState([])
   const [goalRatePct, setGoalRatePct] = useState(0)
+  const [goalWeightKg, setGoalWeightKg] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -21,13 +22,14 @@ export function useTargets() {
         await Promise.all([
           supabase.from('weight_log').select('logged_on, kg').order('logged_on'),
           supabase.from('food_log').select('logged_on, kcal'),
-          supabase.from('settings').select('goal_rate_pct').maybeSingle(),
+          supabase.from('settings').select('*').maybeSingle(),
         ])
       if (wErr) throw wErr
       if (fErr) throw fErr
 
       const rate = settings?.goal_rate_pct ?? 0
       setGoalRatePct(rate)
+      setGoalWeightKg(settings?.goal_weight_kg ?? null)
 
       // Roll food rows up into per-day kcal totals.
       const byDay = new Map()
@@ -52,17 +54,34 @@ export function useTargets() {
     load()
   }, [load])
 
-  const saveGoalRate = useCallback(
-    async (pct) => {
+  const saveSettings = useCallback(
+    async (patch) => {
       const { data: u } = await supabase.auth.getUser()
       const user_id = u?.user?.id
       await supabase
         .from('settings')
-        .upsert({ user_id, goal_rate_pct: pct, updated_at: new Date().toISOString() })
+        .upsert({ user_id, ...patch, updated_at: new Date().toISOString() })
       await load()
     },
     [load],
   )
 
-  return { targets, weightSeries, intakeSeries, goalRatePct, loading, error, reload: load, saveGoalRate }
+  const saveGoalRate = useCallback((pct) => saveSettings({ goal_rate_pct: pct }), [saveSettings])
+  const saveGoalWeight = useCallback(
+    (kg) => saveSettings({ goal_weight_kg: kg }),
+    [saveSettings],
+  )
+
+  return {
+    targets,
+    weightSeries,
+    intakeSeries,
+    goalRatePct,
+    goalWeightKg,
+    loading,
+    error,
+    reload: load,
+    saveGoalRate,
+    saveGoalWeight,
+  }
 }

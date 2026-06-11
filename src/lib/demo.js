@@ -65,7 +65,45 @@ function seed() {
   food_log.push(mkFood(today, 'Eggs', 100, 155, 13, 1.1, 11))
   food_log.push(mkFood(today, 'Chicken breast', 200, 165, 31, 0, 3.6))
 
-  return { weight_log, food_log, foods: [], workouts: [], workout_sets: [], targets: [], settings: [{ user_id: DEMO_USER.id, goal_rate_pct: -0.5 }] }
+  // A sample saved meal so the quick-add UI is populated on load.
+  const breakfastItems = [
+    mkItem('Oats', 80, 389, 16.9, 66.3, 6.9),
+    mkItem('Whole milk', 300, 64, 3.3, 4.8, 3.6),
+    mkItem('Eggs', 100, 155, 13, 1.1, 11),
+  ]
+  const meals = [
+    {
+      id: uuid(),
+      user_id: DEMO_USER.id,
+      name: 'Standard breakfast',
+      items: breakfastItems,
+      created_at: `${today}T06:00:00.000Z`,
+    },
+  ]
+
+  return {
+    weight_log,
+    food_log,
+    foods: [],
+    workouts: [],
+    workout_sets: [],
+    targets: [],
+    meals,
+    settings: [{ user_id: DEMO_USER.id, goal_rate_pct: -0.5, goal_weight_kg: 76 }],
+  }
+}
+
+// A meal item: the same per-portion shape we store in food_log.
+function mkItem(name, grams, kcal100, p100, c100, f100) {
+  const f = grams / 100
+  return {
+    name,
+    grams,
+    kcal: Math.round(kcal100 * f),
+    protein_g: Math.round(p100 * f),
+    carb_g: Math.round(c100 * f),
+    fat_g: Math.round(f100 * f),
+  }
 }
 
 function mkFood(day, name, grams, kcal100, p100, c100, f100) {

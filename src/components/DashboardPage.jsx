@@ -3,14 +3,34 @@ import { supabase } from '../lib/supabase.js'
 import { todayISO, prettyDate } from '../lib/dates.js'
 import { useTargets } from '../hooks/useTargets.js'
 import { useDayTotals } from '../hooks/useDayTotals.js'
+import { computeInsights } from '../lib/insights.js'
 import ProgressBar from './ProgressBar.jsx'
 import { WeightChart, CaloriesChart } from './Charts.jsx'
 
 export default function DashboardPage() {
   const today = todayISO()
-  const { targets, weightSeries, intakeSeries, goalRatePct, loading, error, saveGoalRate } =
-    useTargets()
+  const {
+    targets,
+    weightSeries,
+    intakeSeries,
+    goalRatePct,
+    goalWeightKg,
+    loading,
+    error,
+    saveGoalRate,
+    saveGoalWeight,
+  } = useTargets()
   const { totals } = useDayTotals(today)
+
+  const insights = targets
+    ? computeInsights({
+        intakeSeries,
+        target: targets.target_kcal,
+        trendKg: targets.trend_kg,
+        weeklySlopeKg: targets.weekly_slope_kg,
+        goalWeightKg,
+      })
+    : null
 
   return (
     <div className="space-y-6">
@@ -68,6 +88,12 @@ export default function DashboardPage() {
                 <CaloriesChart series={intakeSeries} target={targets.target_kcal} />
               </Card>
             </div>
+
+            <InsightsCard
+              insights={insights}
+              goalWeightKg={goalWeightKg}
+              onSaveGoalWeight={saveGoalWeight}
+            />
           </div>
 
           {/* Secondary column — at-a-glance stats, macros, goal. */}
@@ -95,6 +121,90 @@ export default function DashboardPage() {
           </aside>
         </div>
       )}
+    </div>
+  )
+}
+
+function InsightsCard({ insights, goalWeightKg, onSaveGoalWeight }) {
+  if (!insights) return null
+  const { avgIntake, adherencePct, loggedDays, onTargetDays, projWeight4 } = insights
+
+  let projection
+  if (goalWeightKg == null) {
+    projection = projWeight4 != null ? `≈ ${projWeight4} kg in 4 wks` : '—'
+  } else if (insights.onTrack && insights.etaWeeks === 0) {
+    projection = 'At your goal 🎉'
+  } else if (insights.onTrack) {
+    projection = `~${insights.etaWeeks} wks → ${prettyDate(insights.etaDateISO)}`
+  } else {
+    projection = 'Not on track'
+  }
+
+  return (
+    <section className="rounded-2xl bg-slate-800/60 p-4">
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="text-sm font-medium text-slate-300">This week</h2>
+        <span className="text-xs text-slate-500">last 7 days</span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Mini label="Avg intake" value={avgIntake != null ? `${avgIntake}` : '—'} sub="kcal/day" />
+        <Mini
+          label="Adherence"
+          value={adherencePct != null ? `${adherencePct}%` : '—'}
+          sub={loggedDays ? `${onTargetDays}/${loggedDays} days` : 'no data'}
+        />
+        <Mini
+          label="Weekly"
+          value={`${insights.weeklySlopeKg > 0 ? '+' : ''}${insights.weeklySlopeKg}`}
+          sub="kg/week"
+        />
+        <Mini label={goalWeightKg == null ? 'Projection' : `Goal ${goalWeightKg}kg`} value={projection} small />
+      </div>
+      <GoalWeight value={goalWeightKg} onSave={onSaveGoalWeight} />
+    </section>
+  )
+}
+
+function Mini({ label, value, sub, small }) {
+  return (
+    <div className="rounded-xl bg-slate-900/50 p-3">
+      <div className="text-xs text-slate-500">{label}</div>
+      <div className={`mt-0.5 font-semibold tabular-nums text-white ${small ? 'text-sm' : 'text-lg'}`}>
+        {value}
+      </div>
+      {sub && <div className="text-[11px] text-slate-500">{sub}</div>}
+    </div>
+  )
+}
+
+function GoalWeight({ value, onSave }) {
+  const [kg, setKg] = useState(value ?? '')
+  const [saving, setSaving] = useState(false)
+  const parsed = kg === '' ? null : parseFloat(kg)
+  const dirty = (parsed ?? null) !== (value ?? null)
+  return (
+    <div className="mt-3 flex items-center gap-3 border-t border-slate-700/60 pt-3">
+      <label className="text-sm text-slate-400">Goal weight</label>
+      <input
+        type="number"
+        step="0.1"
+        inputMode="decimal"
+        value={kg}
+        placeholder="kg"
+        onChange={(e) => setKg(e.target.value)}
+        className="w-24 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+      />
+      <button
+        onClick={async () => {
+          setSaving(true)
+          await onSave(parsed)
+          setSaving(false)
+        }}
+        disabled={saving || !dirty}
+        className="ml-auto rounded-lg bg-slate-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        {saving ? '…' : 'Set'}
+      </button>
     </div>
   )
 }

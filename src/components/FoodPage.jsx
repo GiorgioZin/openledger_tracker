@@ -3,11 +3,29 @@ import { supabase } from '../lib/supabase.js'
 import { todayISO, prettyDate } from '../lib/dates.js'
 import { searchFoods, lookupBarcode } from '../lib/openfoodfacts.js'
 import { useDayTotals } from '../hooks/useDayTotals.js'
+import { useQuickAdd } from '../hooks/useQuickAdd.js'
 
 export default function FoodPage() {
   const today = todayISO()
   const { totals, rows, reload } = useDayTotals(today)
+  const { recents, meals, reload: reloadQuick, logItems, saveMeal, deleteMeal } = useQuickAdd()
   const [selected, setSelected] = useState(null) // food awaiting a grams entry
+
+  async function refreshAll() {
+    await Promise.all([reload(), reloadQuick()])
+  }
+
+  async function logMeal(meal) {
+    await logItems(meal.items)
+    await refreshAll()
+  }
+
+  async function saveTodayAsMeal() {
+    if (!rows.length) return
+    const name = prompt('Name this meal', 'My meal')
+    if (!name) return
+    await saveMeal(name, rows)
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
@@ -15,6 +33,16 @@ export default function FoodPage() {
       <p className="-mt-3 text-sm text-slate-400">{prettyDate(today)}</p>
 
       <Totals totals={totals} />
+
+      <QuickAdd
+        recents={recents}
+        meals={meals}
+        canSaveToday={rows.length > 0}
+        onPickRecent={setSelected}
+        onLogMeal={logMeal}
+        onDeleteMeal={deleteMeal}
+        onSaveToday={saveTodayAsMeal}
+      />
 
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
         <div>
@@ -24,7 +52,7 @@ export default function FoodPage() {
               onCancel={() => setSelected(null)}
               onLogged={async () => {
                 setSelected(null)
-                await reload()
+                await refreshAll()
               }}
             />
           ) : (
@@ -34,11 +62,89 @@ export default function FoodPage() {
 
         <div>
           <h2 className="mb-2 text-sm font-medium text-slate-300">Logged today</h2>
-          <LoggedList rows={rows} onChange={reload} />
+          <LoggedList rows={rows} onChange={refreshAll} />
         </div>
       </div>
     </div>
   )
+}
+
+function QuickAdd({ recents, meals, canSaveToday, onPickRecent, onLogMeal, onDeleteMeal, onSaveToday }) {
+  if (!recents.length && !meals.length && !canSaveToday) return null
+  return (
+    <div className="space-y-3 rounded-2xl bg-slate-800/60 p-4">
+      {recents.length > 0 && (
+        <div>
+          <h2 className="mb-2 text-sm font-medium text-slate-300">Recent</h2>
+          <div className="flex flex-wrap gap-2">
+            {recents.map((f) => (
+              <button
+                key={f.name}
+                onClick={() => onPickRecent(f)}
+                className="rounded-full bg-slate-900 px-3 py-1.5 text-sm text-slate-200 ring-1 ring-slate-700 hover:ring-sky-500"
+                title={`${f.kcal} kcal/100g · default ${f.defaultGrams} g`}
+              >
+                {f.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-medium text-slate-300">Saved meals</h2>
+          <button
+            onClick={onSaveToday}
+            disabled={!canSaveToday}
+            className="text-xs font-medium text-sky-400 disabled:text-slate-600"
+          >
+            ＋ Save today
+          </button>
+        </div>
+        {meals.length === 0 ? (
+          <p className="text-xs text-slate-500">
+            Save today’s log as a reusable meal to re-add it in one tap.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {meals.map((m) => (
+              <li
+                key={m.id}
+                className="flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm text-white">{m.name}</span>
+                  <span className="block text-xs text-slate-500">
+                    {m.items.length} items · {Math.round(sumKcal(m.items))} kcal
+                  </span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <button
+                    onClick={() => onLogMeal(m)}
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white"
+                  >
+                    Log
+                  </button>
+                  <button
+                    onClick={() => onDeleteMeal(m.id)}
+                    className="text-slate-500"
+                    aria-label="Delete meal"
+                  >
+                    ✕
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function sumKcal(items) {
+  return items.reduce((a, it) => a + Number(it.kcal), 0)
 }
 
 function Totals({ totals }) {
@@ -133,7 +239,7 @@ function FoodSearch({ onPick }) {
 }
 
 function LogForm({ food, onCancel, onLogged }) {
-  const [grams, setGrams] = useState(100)
+  const [grams, setGrams] = useState(food.defaultGrams ?? 100)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
   const factor = (Number(grams) || 0) / 100
