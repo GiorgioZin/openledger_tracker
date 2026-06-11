@@ -15,8 +15,25 @@ const KCAL_PER_KG = 7700
 // day would otherwise drag the estimate (and the calorie target) absurdly low.
 // Below this many logged days in the window we fall back to a maintenance guess.
 const MIN_INTAKE_DAYS = 5
-// Rough maintenance multiplier (kcal per kg) used only as a cold-start fallback.
-const MAINTENANCE_KCAL_PER_KG = 31
+
+// Cold-start maintenance estimate (used until enough intake is logged; after
+// that the energy-balance figure, which already reflects real activity, wins).
+//   estimate = weight * BMR+NEAT/kg  +  training (from activity level)  +  steps
+const NEAT_KCAL_PER_KG = 26.4 // ~BMR (22) × a sedentary 1.2 baseline
+const KCAL_PER_STEP = 0.04
+const TRAINING_KCAL = {
+  sedentary: 0,
+  light: 100, // ~1–2 sessions/week
+  moderate: 200, // ~3–4 sessions/week
+  active: 300, // ~5–6 sessions/week
+  very_active: 400, // daily / hard training
+}
+
+// Maintenance estimate from bodyweight + self-reported activity + steps.
+export function estimateMaintenance(weight, activityLevel = 'moderate', dailySteps = 0) {
+  const training = TRAINING_KCAL[activityLevel] ?? TRAINING_KCAL.moderate
+  return weight * NEAT_KCAL_PER_KG + training + (Number(dailySteps) || 0) * KCAL_PER_STEP
+}
 
 /**
  * Exponentially-weighted moving average over a date-ordered weight series.
@@ -64,6 +81,8 @@ export function computeTargets({
   goalRateUnit = 'pct',
   tdeeMode = 'dynamic',
   custom = null,
+  activityLevel = 'moderate',
+  dailySteps = 0,
   windowDays = 14,
 }) {
   if (!weights || weights.length === 0) return null
@@ -101,7 +120,7 @@ export function computeTargets({
     tdee = meanIntake - (deltaTrend * KCAL_PER_KG) / spanDays
     tdee_source = 'balance'
   } else {
-    tdee = weight * MAINTENANCE_KCAL_PER_KG
+    tdee = estimateMaintenance(weight, activityLevel, dailySteps)
     tdee_source = 'estimate'
   }
 

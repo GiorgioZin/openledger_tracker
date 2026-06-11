@@ -8,6 +8,8 @@ const DEFAULT_SETTINGS = {
   goal_rate_kg: 0,
   goal_weight_kg: null,
   tdee_mode: 'dynamic',
+  activity_level: 'moderate',
+  daily_steps: 0,
   custom_kcal: null,
   custom_protein_g: null,
   custom_carb_g: null,
@@ -76,6 +78,8 @@ export function useTargets() {
           goalRateKg: s.goal_rate_kg ?? 0,
           goalRateUnit: s.goal_rate_unit ?? 'pct',
           tdeeMode: s.tdee_mode ?? 'dynamic',
+          activityLevel: s.activity_level ?? 'moderate',
+          dailySteps: s.daily_steps ?? 0,
           custom: {
             kcal: s.custom_kcal,
             protein_g: s.custom_protein_g,

@@ -91,6 +91,8 @@ create table if not exists public.settings (
   goal_rate_kg   numeric not null default 0,   -- weekly bodyweight change, kg (neg = cut)
   goal_weight_kg numeric,                       -- optional target weight, for ETA projection
   tdee_mode      text not null default 'dynamic', -- 'dynamic' (adaptive) or 'custom'
+  activity_level text not null default 'moderate', -- sedentary|light|moderate|active|very_active
+  daily_steps    integer not null default 0,      -- average steps/day, feeds the estimate
   custom_kcal     numeric,                      -- used when tdee_mode = 'custom'
   custom_protein_g numeric,
   custom_carb_g    numeric,

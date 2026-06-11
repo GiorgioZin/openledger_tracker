@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ewmaTrend, computeTargets } from './engine.js'
+import { ewmaTrend, computeTargets, estimateMaintenance } from './engine.js'
 
 function series(startISO, kgs) {
   const out = []
@@ -94,6 +94,20 @@ describe('computeTargets', () => {
     expect(cut.target_source).toBe('dynamic')
     // -0.5 kg/week ≈ -550 kcal/day below maintenance.
     expect(maintain.target_kcal - cut.target_kcal).toBeCloseTo(Math.round((0.5 * 7700) / 7), -1)
+  })
+
+  it('raises the cold-start estimate with higher activity and steps', () => {
+    const weights = series('2026-01-01', Array.from({ length: 5 }, () => 80))
+    const sed = computeTargets({ weights, dailyIntake: [], activityLevel: 'sedentary', dailySteps: 0 })
+    const act = computeTargets({ weights, dailyIntake: [], activityLevel: 'very_active', dailySteps: 12000 })
+    expect(act.tdee_est).toBeGreaterThan(sed.tdee_est)
+    expect(sed.tdee_source).toBe('estimate')
+  })
+
+  it('estimateMaintenance scales with weight, activity and steps', () => {
+    expect(estimateMaintenance(80, 'sedentary', 0)).toBeCloseTo(80 * 26.4, 0)
+    expect(estimateMaintenance(80, 'very_active', 0)).toBeGreaterThan(estimateMaintenance(80, 'sedentary', 0))
+    expect(estimateMaintenance(80, 'moderate', 10000)).toBeGreaterThan(estimateMaintenance(80, 'moderate', 0))
   })
 
   it('uses fixed targets in custom mode (ignores goal rate)', () => {
