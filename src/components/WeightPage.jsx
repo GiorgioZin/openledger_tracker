@@ -4,14 +4,17 @@ import { todayISO, prettyDate } from '../lib/dates.js'
 import { ewmaTrend } from '../lib/engine.js'
 import { WeightChart } from './Charts.jsx'
 import { useMeasurements } from '../hooks/useMeasurements.js'
+import { useToast } from './Toast.jsx'
 
 export default function WeightPage() {
+  const toast = useToast()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [date, setDate] = useState(todayISO())
   const [kg, setKg] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
+  const [visibleCount, setVisibleCount] = useState(30)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -53,9 +56,17 @@ export default function WeightPage() {
     }
   }
 
-  async function remove(id) {
-    await supabase.from('weight_log').delete().eq('id', id)
+  async function remove(row) {
+    await supabase.from('weight_log').delete().eq('id', row.id)
     await load()
+    toast({
+      message: `Removed ${row.logged_on}`,
+      actionLabel: 'Undo',
+      onAction: async () => {
+        await supabase.from('weight_log').insert(row)
+        await load()
+      },
+    })
   }
 
   async function editKg(row) {
@@ -73,7 +84,7 @@ export default function WeightPage() {
   const trended = [...ascTrend].reverse()
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto max-w-3xl space-y-5">
       <h1 className="text-2xl font-bold text-white">Weight</h1>
 
       <form onSubmit={save} className="rounded-2xl bg-slate-800/60 p-4">
@@ -117,36 +128,46 @@ export default function WeightPage() {
       ) : rows.length === 0 ? (
         <p className="text-sm text-slate-500">No weigh-ins yet.</p>
       ) : (
-        <ul className="grid gap-1 sm:grid-cols-2">
-          {trended.map((r) => (
-            <li
-              key={r.logged_on}
-              className="flex items-center justify-between rounded-lg bg-slate-800/60 px-4 py-2.5"
-            >
-              <span className="text-sm text-slate-400">{prettyDate(r.logged_on)}</span>
-              <span className="flex items-center gap-3">
-                <span className="tabular-nums text-white">{r.kg} kg</span>
-                <span className="text-xs tabular-nums text-slate-500">
-                  trend {Math.round(r.trend * 10) / 10}
+        <>
+          <ul className="grid gap-1 sm:grid-cols-2">
+            {trended.slice(0, visibleCount).map((r) => (
+              <li
+                key={r.logged_on}
+                className="flex items-center justify-between rounded-lg bg-slate-800/60 px-4 py-2.5"
+              >
+                <span className="text-sm text-slate-400">{prettyDate(r.logged_on)}</span>
+                <span className="flex items-center gap-3">
+                  <span className="tabular-nums text-white">{r.kg} kg</span>
+                  <span className="text-xs tabular-nums text-slate-500">
+                    trend {Math.round(r.trend * 10) / 10}
+                  </span>
+                  <button
+                    onClick={() => editKg(findRow(rows, r.logged_on))}
+                    className="text-slate-500"
+                    aria-label="Edit"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    onClick={() => remove(findRow(rows, r.logged_on))}
+                    className="text-slate-500"
+                    aria-label="Delete"
+                  >
+                    ✕
+                  </button>
                 </span>
-                <button
-                  onClick={() => editKg(findRow(rows, r.logged_on))}
-                  className="text-slate-500"
-                  aria-label="Edit"
-                >
-                  ✎
-                </button>
-                <button
-                  onClick={() => remove(findRow(rows, r.logged_on).id)}
-                  className="text-slate-500"
-                  aria-label="Delete"
-                >
-                  ✕
-                </button>
-              </span>
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+          {trended.length > visibleCount && (
+            <button
+              onClick={() => setVisibleCount((n) => n + 30)}
+              className="mx-auto block rounded-lg bg-slate-800 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700"
+            >
+              Show more ({trended.length - visibleCount} older)
+            </button>
+          )}
+        </>
       )}
 
       <Measurements />

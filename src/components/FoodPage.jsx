@@ -5,6 +5,7 @@ import { searchFoods, lookupBarcode } from '../lib/openfoodfacts.js'
 import { useDayTotals } from '../hooks/useDayTotals.js'
 import { useQuickAdd } from '../hooks/useQuickAdd.js'
 import { useRecipes, recipeServing } from '../hooks/useRecipes.js'
+import { useToast } from './Toast.jsx'
 import BarcodeScanner from './BarcodeScanner.jsx'
 
 const MEALS = ['breakfast', 'lunch', 'dinner', 'snack']
@@ -507,33 +508,40 @@ function FoodSearch({ onPick }) {
   const [err, setErr] = useState(null)
   const [scanning, setScanning] = useState(false)
 
-  async function search(query, signal) {
+  // `live` (type-ahead) is tolerant: it never shows an error or blanks the
+  // list on a failed/empty response (Open Food Facts rate-limits rapid
+  // requests), so the Go button stays authoritative.
+  async function search(query, signal, live = false) {
     const text = query.trim()
     if (!text) return
-    setBusy(true)
-    setErr(null)
+    if (!live) {
+      setBusy(true)
+      setErr(null)
+    }
     try {
-      // A pure-digit query is treated as a barcode.
+      let r
       if (/^\d{6,}$/.test(text)) {
         const p = await lookupBarcode(text, { signal })
-        setResults(p ? [p] : [])
-        if (!p) setErr('No product found for that barcode.')
+        r = p ? [p] : []
+        if (!p && !live) setErr('No product found for that barcode.')
       } else {
-        setResults(await searchFoods(text, { signal }))
+        r = await searchFoods(text, { signal })
       }
+      if (!live || r.length) setResults(r)
     } catch (e2) {
-      if (e2?.name !== 'AbortError') setErr(e2.message)
+      if (e2?.name !== 'AbortError' && !live) setErr(e2.message)
     } finally {
-      setBusy(false)
+      if (!live) setBusy(false)
     }
   }
 
-  // Search as you type (debounced). Barcodes still use the Go button / scanner.
+  // Search as you type (debounced). Min 3 chars and a longer delay keep the
+  // request count low so OFF doesn't throttle. Barcodes use Go / the scanner.
   useEffect(() => {
     const text = q.trim()
-    if (text.length < 2 || /^\d{4,}$/.test(text)) return undefined
+    if (text.length < 3 || /^\d{4,}$/.test(text)) return undefined
     const ctrl = new AbortController()
-    const t = setTimeout(() => search(text, ctrl.signal), 400)
+    const t = setTimeout(() => search(text, ctrl.signal, true), 600)
     return () => {
       clearTimeout(t)
       ctrl.abort()
@@ -752,9 +760,18 @@ function Mac({ k, v }) {
 const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'other']
 
 function LoggedList({ rows, onChange }) {
-  async function remove(id) {
-    await supabase.from('food_log').delete().eq('id', id)
+  const toast = useToast()
+  async function remove(row) {
+    await supabase.from('food_log').delete().eq('id', row.id)
     await onChange()
+    toast({
+      message: `Removed ${row.name}`,
+      actionLabel: 'Undo',
+      onAction: async () => {
+        await supabase.from('food_log').insert(row)
+        await onChange()
+      },
+    })
   }
   if (!rows.length) {
     return <p className="text-sm text-slate-500">Nothing logged yet today.</p>
@@ -784,7 +801,7 @@ function LoggedList({ rows, onChange }) {
             </div>
             <ul className="space-y-2">
               {items.map((r) => (
-                <LoggedItem key={r.id} row={r} onChange={onChange} onRemove={() => remove(r.id)} />
+                <LoggedItem key={r.id} row={r} onChange={onChange} onRemove={() => remove(r)} />
               ))}
             </ul>
           </div>
