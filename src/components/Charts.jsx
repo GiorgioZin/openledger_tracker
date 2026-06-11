@@ -143,6 +143,48 @@ export function CaloriesChart({ series, target, statusByDate = {}, days = 14, he
   )
 }
 
+/**
+ * Circular progress ring. Shows `consumed / max` as an arc; the centre text is
+ * caller-supplied (e.g. the remaining amount).
+ */
+export function Ring({ consumed, max, color = '#10b981', label, center, size = 76 }) {
+  const stroke = 8
+  const r = (size - stroke) / 2
+  const circ = 2 * Math.PI * r
+  const pct = max > 0 ? Math.min(1, consumed / max) : 0
+  const over = max > 0 && consumed > max
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#334155" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={over ? '#f59e0b' : color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${circ * pct} ${circ}`}
+        />
+        <text
+          x="50%"
+          y="50%"
+          dominantBaseline="central"
+          textAnchor="middle"
+          className="rotate-90 fill-white"
+          style={{ transformOrigin: 'center' }}
+          fontSize="15"
+          fontWeight="600"
+        >
+          {center}
+        </text>
+      </svg>
+      {label && <span className="text-xs text-slate-400">{label}</span>}
+    </div>
+  )
+}
+
 function ChartEmpty({ height, label }) {
   return (
     <div
