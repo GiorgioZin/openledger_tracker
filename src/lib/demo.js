@@ -140,6 +140,10 @@ function seed() {
     recipes,
     measurements,
     fasts,
+    favorites: [
+      { id: uuid(), user_id: DEMO_USER.id, name: 'Chicken breast', kcal: 165, protein_g: 31, carb_g: 0, fat_g: 3.6, fiber_g: 0, sugar_g: 0, satfat_g: 1, sodium_mg: 74, default_grams: 200, created_at: `${today}T05:00:00.000Z` },
+      { id: uuid(), user_id: DEMO_USER.id, name: 'Greek yogurt', kcal: 59, protein_g: 10, carb_g: 3.6, fat_g: 0.4, fiber_g: 0, sugar_g: 3.6, satfat_g: 0.1, sodium_mg: 36, default_grams: 200, created_at: `${today}T05:01:00.000Z` },
+    ],
     day_status: [],
     settings: [
       {
