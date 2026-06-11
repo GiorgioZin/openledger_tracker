@@ -25,6 +25,7 @@ export default function FoodPage() {
   const { recents, meals, reload: reloadQuick, logItems, saveMeal, deleteMeal } = useQuickAdd()
   const { recipes, create: createRecipe, remove: removeRecipe } = useRecipes()
   const [selected, setSelected] = useState(null) // food awaiting a grams entry
+  const [quickAdd, setQuickAdd] = useState(false)
 
   const isToday = date === today
 
@@ -86,8 +87,25 @@ export default function FoodPage() {
                 await refreshAll()
               }}
             />
+          ) : quickAdd ? (
+            <QuickAddForm
+              dateISO={date}
+              onCancel={() => setQuickAdd(false)}
+              onLogged={async () => {
+                setQuickAdd(false)
+                await refreshAll()
+              }}
+            />
           ) : (
-            <FoodSearch onPick={setSelected} />
+            <>
+              <FoodSearch onPick={setSelected} />
+              <button
+                onClick={() => setQuickAdd(true)}
+                className="mt-3 w-full rounded-lg border border-dashed border-slate-700 py-2.5 text-sm text-slate-400 hover:border-slate-600 hover:text-slate-200"
+              >
+                ＋ Quick add calories
+              </button>
+            </>
           )}
         </div>
 
@@ -612,6 +630,22 @@ function LogForm({ food, dateISO, onCancel, onLogged }) {
         onChange={(e) => setGrams(e.target.value)}
         className="mt-1 w-full rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
       />
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {[50, 100, 150, 200, 250].map((g) => (
+          <button
+            key={g}
+            type="button"
+            onClick={() => setGrams(g)}
+            className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
+              Number(grams) === g
+                ? 'bg-sky-600 text-white ring-sky-600'
+                : 'bg-slate-900 text-slate-300 ring-slate-700 hover:ring-slate-600'
+            }`}
+          >
+            {g} g
+          </button>
+        ))}
+      </div>
 
       <label className="mt-3 block text-sm text-slate-300">Meal</label>
       <div className="mt-1 inline-flex flex-wrap gap-1 rounded-lg bg-slate-900 p-1 ring-1 ring-slate-700">
@@ -698,27 +732,242 @@ function LoggedList({ rows, onChange }) {
             </div>
             <ul className="space-y-2">
               {items.map((r) => (
-                <li
-                  key={r.id}
-                  className="flex items-center justify-between rounded-lg bg-slate-800/60 px-4 py-3"
-                >
-                  <span>
-                    <span className="block text-white">{r.name}</span>
-                    <span className="block text-xs text-slate-400">
-                      {Math.round(r.grams)} g · {Math.round(r.kcal)} kcal · P
-                      {Math.round(r.protein_g)} C{Math.round(r.carb_g)} F{Math.round(r.fat_g)}
-                    </span>
-                  </span>
-                  <button onClick={() => remove(r.id)} className="text-slate-500">
-                    ✕
-                  </button>
-                </li>
+                <LoggedItem key={r.id} row={r} onChange={onChange} onRemove={() => remove(r.id)} />
               ))}
             </ul>
           </div>
         )
       })}
     </div>
+  )
+}
+
+function LoggedItem({ row, onChange, onRemove }) {
+  const [editing, setEditing] = useState(false)
+  const [grams, setGrams] = useState(row.grams)
+  const [kcal, setKcal] = useState(row.kcal)
+  const [meal, setMeal] = useState(MEALS.includes(row.meal) ? row.meal : 'snack')
+  const [busy, setBusy] = useState(false)
+  const byGrams = Number(row.grams) > 0
+
+  async function save() {
+    setBusy(true)
+    let patch = { meal }
+    if (byGrams) {
+      const g = Number(grams) || 0
+      const factor = g / Number(row.grams)
+      patch = {
+        ...patch,
+        grams: g,
+        kcal: round(Number(row.kcal) * factor),
+        protein_g: round(Number(row.protein_g) * factor),
+        carb_g: round(Number(row.carb_g) * factor),
+        fat_g: round(Number(row.fat_g) * factor),
+        fiber_g: round(Number(row.fiber_g || 0) * factor),
+        sugar_g: round(Number(row.sugar_g || 0) * factor),
+        satfat_g: round(Number(row.satfat_g || 0) * factor),
+        sodium_mg: round(Number(row.sodium_mg || 0) * factor),
+      }
+    } else {
+      patch = { ...patch, kcal: round(Number(kcal) || 0) }
+    }
+    await supabase.from('food_log').update(patch).eq('id', row.id)
+    setEditing(false)
+    setBusy(false)
+    await onChange()
+  }
+
+  if (editing) {
+    return (
+      <li className="space-y-2 rounded-lg bg-slate-800/60 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-white">{row.name}</span>
+          <span className="flex items-center gap-2">
+            {byGrams ? (
+              <>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={grams}
+                  onChange={(e) => setGrams(e.target.value)}
+                  className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-sky-500"
+                  aria-label="Grams"
+                />
+                <span className="text-xs text-slate-500">g</span>
+              </>
+            ) : (
+              <>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={kcal}
+                  onChange={(e) => setKcal(e.target.value)}
+                  className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-sky-500"
+                  aria-label="Calories"
+                />
+                <span className="text-xs text-slate-500">kcal</span>
+              </>
+            )}
+          </span>
+        </div>
+        <div className="inline-flex flex-wrap gap-1 rounded-lg bg-slate-900 p-1 ring-1 ring-slate-700">
+          {MEALS.map((m) => (
+            <button
+              key={m}
+              onClick={() => setMeal(m)}
+              className={`rounded-md px-2 py-1 text-xs font-medium capitalize ${
+                meal === m ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setEditing(false)}
+            className="flex-1 rounded-lg bg-slate-700 py-1.5 text-sm text-white"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={save}
+            disabled={busy}
+            className="flex-1 rounded-lg bg-emerald-600 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            Save
+          </button>
+        </div>
+      </li>
+    )
+  }
+
+  return (
+    <li className="flex items-center justify-between rounded-lg bg-slate-800/60 px-4 py-3">
+      <span>
+        <span className="block text-white">{row.name}</span>
+        <span className="block text-xs text-slate-400">
+          {byGrams ? `${Math.round(row.grams)} g · ` : ''}
+          {Math.round(row.kcal)} kcal · P{Math.round(row.protein_g)} C{Math.round(row.carb_g)} F
+          {Math.round(row.fat_g)}
+        </span>
+      </span>
+      <span className="flex items-center gap-3">
+        <button onClick={() => setEditing(true)} className="text-slate-500" aria-label="Edit">
+          ✎
+        </button>
+        <button onClick={onRemove} className="text-slate-500" aria-label="Delete">
+          ✕
+        </button>
+      </span>
+    </li>
+  )
+}
+
+function QuickAddForm({ dateISO, onCancel, onLogged }) {
+  const [name, setName] = useState('')
+  const [kcal, setKcal] = useState('')
+  const [p, setP] = useState('')
+  const [c, setC] = useState('')
+  const [f, setF] = useState('')
+  const [meal, setMeal] = useState(mealForNow())
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
+
+  async function save() {
+    const k = parseFloat(kcal)
+    if (!k) {
+      setErr('Enter the calories.')
+      return
+    }
+    setBusy(true)
+    setErr(null)
+    try {
+      const { data: u } = await supabase.auth.getUser()
+      const { error } = await supabase.from('food_log').insert({
+        user_id: u?.user?.id,
+        logged_on: dateISO || todayISO(),
+        food_id: null,
+        name: name.trim() || 'Quick add',
+        grams: 0,
+        kcal: round(k),
+        protein_g: round(parseFloat(p) || 0),
+        carb_g: round(parseFloat(c) || 0),
+        fat_g: round(parseFloat(f) || 0),
+        meal,
+      })
+      if (error) throw error
+      await onLogged()
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-slate-800/60 p-4">
+      <div className="font-semibold text-white">Quick add</div>
+      <p className="text-xs text-slate-400">Log calories (and macros, optional) without searching.</p>
+
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Name (optional)"
+        className="mt-3 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+      />
+      <div className="mt-2 grid grid-cols-4 gap-2">
+        <Field label="kcal" value={kcal} onChange={setKcal} />
+        <Field label="P" value={p} onChange={setP} />
+        <Field label="C" value={c} onChange={setC} />
+        <Field label="F" value={f} onChange={setF} />
+      </div>
+
+      <div className="mt-3 inline-flex flex-wrap gap-1 rounded-lg bg-slate-900 p-1 ring-1 ring-slate-700">
+        {MEALS.map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMeal(m)}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium capitalize ${
+              meal === m ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            {m}
+          </button>
+        ))}
+      </div>
+
+      {err && <p className="mt-2 text-sm text-red-400">{err}</p>}
+
+      <div className="mt-4 flex gap-2">
+        <button onClick={onCancel} className="flex-1 rounded-lg bg-slate-700 py-3 text-white">
+          Cancel
+        </button>
+        <button
+          onClick={save}
+          disabled={busy}
+          className="flex-1 rounded-lg bg-emerald-600 py-3 font-semibold text-white disabled:opacity-50"
+        >
+          {busy ? '…' : 'Log it'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function Field({ label, value, onChange }) {
+  return (
+    <label className="block text-center text-xs text-slate-500">
+      {label}
+      <input
+        type="number"
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full rounded-lg bg-slate-900 px-2 py-2 text-center text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+      />
+    </label>
   )
 }
 
