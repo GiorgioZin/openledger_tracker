@@ -107,6 +107,16 @@ create table if not exists public.day_status (
   primary key (user_id, logged_on)
 );
 
+-- Body measurements (waist, chest, etc.), entered manually over time.
+create table if not exists public.measurements (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  logged_on  date not null default current_date,
+  kind       text not null,                -- e.g. 'waist', 'chest', 'hips'
+  value      numeric not null,             -- cm
+  created_at timestamptz not null default now()
+);
+
 -- Saved meals: a named bundle of food items you can re-log in one tap.
 -- Items are denormalized per-portion (same shape as food_log entries).
 create table if not exists public.meals (
@@ -126,6 +136,7 @@ create index if not exists workouts_user_date_idx    on public.workouts (user_id
 create index if not exists workout_sets_workout_idx  on public.workout_sets (workout_id);
 create index if not exists foods_user_barcode_idx    on public.foods (user_id, barcode);
 create index if not exists meals_user_idx             on public.meals (user_id, created_at desc);
+create index if not exists measurements_user_kind_idx  on public.measurements (user_id, kind, logged_on);
 
 -- ---------------------------------------------------------------------------
 -- Row-level security: a user only ever sees their own rows.
@@ -139,12 +150,13 @@ alter table public.targets      enable row level security;
 alter table public.settings     enable row level security;
 alter table public.meals        enable row level security;
 alter table public.day_status   enable row level security;
+alter table public.measurements enable row level security;
 
 do $$
 declare t text;
 begin
   foreach t in array array[
-    'foods','food_log','weight_log','workouts','workout_sets','targets','settings','meals','day_status'
+    'foods','food_log','weight_log','workouts','workout_sets','targets','settings','meals','day_status','measurements'
   ] loop
     execute format(
       'create policy %1$I_owner on public.%1$I

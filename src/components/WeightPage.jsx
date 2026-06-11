@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase.js'
 import { todayISO, prettyDate } from '../lib/dates.js'
 import { ewmaTrend } from '../lib/engine.js'
 import { WeightChart } from './Charts.jsx'
+import { useMeasurements } from '../hooks/useMeasurements.js'
 
 export default function WeightPage() {
   const [rows, setRows] = useState([])
@@ -147,10 +148,108 @@ export default function WeightPage() {
           ))}
         </ul>
       )}
+
+      <Measurements />
     </div>
   )
 }
 
 function findRow(rows, iso) {
   return rows.find((r) => r.logged_on === iso)
+}
+
+const PRESET_KINDS = ['waist', 'chest', 'hips', 'arm', 'thigh', 'neck']
+
+function Measurements() {
+  const { byKind, add, remove, loading } = useMeasurements()
+  const available = [...new Set([...PRESET_KINDS, ...Object.keys(byKind)])]
+  const [kind, setKind] = useState('waist')
+  const [value, setValue] = useState('')
+  const [date, setDate] = useState(todayISO())
+  const [busy, setBusy] = useState(false)
+
+  const entries = byKind[kind] || []
+  const chartSeries = ewmaTrend(entries.map((m) => ({ logged_on: m.logged_on, kg: Number(m.value) })))
+  const recent = [...entries].reverse()
+
+  async function save(e) {
+    e.preventDefault()
+    const v = parseFloat(value)
+    if (!v) return
+    setBusy(true)
+    await add(kind, v, date)
+    setValue('')
+    setDate(todayISO())
+    setBusy(false)
+  }
+
+  return (
+    <section className="space-y-4 rounded-2xl bg-slate-800/60 p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-slate-200">Measurements</h2>
+        <select
+          value={kind}
+          onChange={(e) => setKind(e.target.value)}
+          className="rounded-lg bg-slate-900 px-2 py-1.5 text-sm capitalize text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        >
+          {available.map((k) => (
+            <option key={k} value={k} className="capitalize">
+              {k}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <form onSubmit={save} className="flex flex-wrap gap-2">
+        <input
+          type="number"
+          step="0.1"
+          inputMode="decimal"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="cm"
+          className="w-24 rounded-lg bg-slate-900 px-3 py-2 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        />
+        <input
+          type="date"
+          value={date}
+          max={todayISO()}
+          onChange={(e) => setDate(e.target.value)}
+          className="min-w-0 flex-1 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        />
+        <button
+          type="submit"
+          disabled={busy}
+          className="rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white disabled:opacity-50"
+        >
+          {busy ? '…' : 'Save'}
+        </button>
+      </form>
+
+      {loading ? null : entries.length >= 2 ? (
+        <WeightChart series={chartSeries} height={160} />
+      ) : entries.length === 0 ? (
+        <p className="text-sm text-slate-500 capitalize">No {kind} measurements yet.</p>
+      ) : null}
+
+      {recent.length > 0 && (
+        <ul className="grid gap-1 sm:grid-cols-2">
+          {recent.map((m) => (
+            <li
+              key={m.id}
+              className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2"
+            >
+              <span className="text-sm text-slate-400">{prettyDate(m.logged_on)}</span>
+              <span className="flex items-center gap-3">
+                <span className="tabular-nums text-white">{m.value} cm</span>
+                <button onClick={() => remove(m.id)} className="text-slate-500" aria-label="Delete">
+                  ✕
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
 }

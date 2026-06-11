@@ -1,6 +1,36 @@
 // Derived weekly insights — pure arithmetic over the same series the dashboard
 // already has. Kept separate from the adaptive engine so it stays easy to test.
-import { todayISO, addDaysISO } from './dates.js'
+import { todayISO, addDaysISO, daysBetween } from './dates.js'
+
+/**
+ * Logging streaks from the set of days that have food logged.
+ * The current streak stays "alive" if today isn't logged yet but yesterday was.
+ *
+ * @param {string[]} loggedDates  ISO dates that count as logged
+ * @param {string} [today]
+ * @returns {{ current:number, longest:number }}
+ */
+export function computeStreak(loggedDates, today = todayISO()) {
+  const set = new Set(loggedDates)
+
+  let current = 0
+  let cursor = set.has(today) ? today : addDaysISO(today, -1)
+  while (set.has(cursor)) {
+    current++
+    cursor = addDaysISO(cursor, -1)
+  }
+
+  let longest = 0
+  let run = 0
+  let prev = null
+  for (const d of [...set].sort()) {
+    run = prev && daysBetween(prev, d) === 1 ? run + 1 : 1
+    if (run > longest) longest = run
+    prev = d
+  }
+
+  return { current, longest }
+}
 
 function mean(xs) {
   if (!xs.length) return null

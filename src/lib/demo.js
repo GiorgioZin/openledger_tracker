@@ -81,6 +81,20 @@ function seed() {
     },
   ]
 
+  // A few waist measurements trending down over the last few weeks.
+  const measurements = []
+  for (let i = 21; i >= 0; i -= 7) {
+    const day = addDaysISO(today, -i)
+    measurements.push({
+      id: uuid(),
+      user_id: DEMO_USER.id,
+      logged_on: day,
+      kind: 'waist',
+      value: Math.round((86 - (21 - i) * 0.15) * 10) / 10,
+      created_at: `${day}T07:30:00.000Z`,
+    })
+  }
+
   return {
     weight_log,
     food_log,
@@ -89,6 +103,7 @@ function seed() {
     workout_sets: [],
     targets: [],
     meals,
+    measurements,
     day_status: [],
     settings: [
       {
