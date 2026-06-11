@@ -39,11 +39,12 @@ function mapProduct(p) {
   }
 }
 
-export async function searchFoods(query, { signal } = {}) {
-  if (DEMO) {
-    const q = query.toLowerCase()
-    return DEMO_CATALOG.filter((f) => f.name.toLowerCase().includes(q))
-  }
+function localSearch(query) {
+  const q = query.toLowerCase()
+  return DEMO_CATALOG.filter((f) => f.name.toLowerCase().includes(q))
+}
+
+async function offSearch(query, signal) {
   const params = new URLSearchParams({
     search_terms: query,
     search_simple: '1',
@@ -58,10 +59,23 @@ export async function searchFoods(query, { signal } = {}) {
   return (data.products || []).map(mapProduct).filter(Boolean)
 }
 
-export async function lookupBarcode(barcode, { signal } = {}) {
+export async function searchFoods(query, { signal } = {}) {
+  // Demo mode still uses the real Open Food Facts catalog when online (so you
+  // can search anything), falling back to the small local catalog only if the
+  // network is unavailable — keeps the demo useful and offline-safe.
   if (DEMO) {
-    return DEMO_CATALOG.find((f) => f.barcode === barcode) || null
+    try {
+      const results = await offSearch(query, signal)
+      if (results.length) return results
+    } catch {
+      /* offline or blocked — fall back to the bundled catalog */
+    }
+    return localSearch(query)
   }
+  return offSearch(query, signal)
+}
+
+async function offLookup(barcode, signal) {
   const params = new URLSearchParams({
     fields: 'code,product_name,generic_name,brands,nutriments',
   })
@@ -72,4 +86,17 @@ export async function lookupBarcode(barcode, { signal } = {}) {
   const data = await res.json()
   if (data.status !== 1) return null
   return mapProduct(data.product)
+}
+
+export async function lookupBarcode(barcode, { signal } = {}) {
+  if (DEMO) {
+    try {
+      const hit = await offLookup(barcode, signal)
+      if (hit) return hit
+    } catch {
+      /* offline or blocked — fall back to the bundled catalog */
+    }
+    return DEMO_CATALOG.find((f) => f.barcode === barcode) || null
+  }
+  return offLookup(barcode, signal)
 }
