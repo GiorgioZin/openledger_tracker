@@ -312,6 +312,10 @@ function RecipeBuilder({ onCancel, onSave }) {
         protein_g: round(pending.protein_g * f),
         carb_g: round(pending.carb_g * f),
         fat_g: round(pending.fat_g * f),
+        fiber_g: round((pending.fiber_g || 0) * f),
+        sugar_g: round((pending.sugar_g || 0) * f),
+        satfat_g: round((pending.satfat_g || 0) * f),
+        sodium_mg: round((pending.sodium_mg || 0) * f),
       },
     ])
     setPending(null)
@@ -409,18 +413,33 @@ function RecipeBuilder({ onCancel, onSave }) {
 
 function Totals({ totals }) {
   return (
-    <div className="grid grid-cols-4 gap-2 rounded-2xl bg-slate-800/60 p-3 text-center">
-      {[
-        ['kcal', Math.round(totals.kcal)],
-        ['P', Math.round(totals.protein_g)],
-        ['C', Math.round(totals.carb_g)],
-        ['F', Math.round(totals.fat_g)],
-      ].map(([k, v]) => (
-        <div key={k}>
-          <div className="text-xs text-slate-500">{k}</div>
-          <div className="text-lg font-semibold tabular-nums text-white">{v}</div>
-        </div>
-      ))}
+    <div className="space-y-2 rounded-2xl bg-slate-800/60 p-3">
+      <div className="grid grid-cols-4 gap-2 text-center">
+        {[
+          ['kcal', Math.round(totals.kcal)],
+          ['P', Math.round(totals.protein_g)],
+          ['C', Math.round(totals.carb_g)],
+          ['F', Math.round(totals.fat_g)],
+        ].map(([k, v]) => (
+          <div key={k}>
+            <div className="text-xs text-slate-500">{k}</div>
+            <div className="text-lg font-semibold tabular-nums text-white">{v}</div>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-4 gap-2 border-t border-slate-700/60 pt-2 text-center">
+        {[
+          ['Fiber', `${Math.round(totals.fiber_g)} g`],
+          ['Sugar', `${Math.round(totals.sugar_g)} g`],
+          ['Sat fat', `${Math.round(totals.satfat_g)} g`],
+          ['Sodium', `${Math.round(totals.sodium_mg)} mg`],
+        ].map(([k, v]) => (
+          <div key={k}>
+            <div className="text-[11px] text-slate-500">{k}</div>
+            <div className="text-sm font-medium tabular-nums text-slate-300">{v}</div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -565,6 +584,10 @@ function LogForm({ food, dateISO, onCancel, onLogged }) {
         protein_g: round(food.protein_g * factor),
         carb_g: round(food.carb_g * factor),
         fat_g: round(food.fat_g * factor),
+        fiber_g: round((food.fiber_g || 0) * factor),
+        sugar_g: round((food.sugar_g || 0) * factor),
+        satfat_g: round((food.satfat_g || 0) * factor),
+        sodium_mg: round((food.sodium_mg || 0) * factor),
         meal,
       })
       if (error) throw error

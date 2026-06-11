@@ -51,8 +51,12 @@ export function recipeServing(recipe, count = 1) {
       protein_g: a.protein_g + Number(it.protein_g || 0),
       carb_g: a.carb_g + Number(it.carb_g || 0),
       fat_g: a.fat_g + Number(it.fat_g || 0),
+      fiber_g: a.fiber_g + Number(it.fiber_g || 0),
+      sugar_g: a.sugar_g + Number(it.sugar_g || 0),
+      satfat_g: a.satfat_g + Number(it.satfat_g || 0),
+      sodium_mg: a.sodium_mg + Number(it.sodium_mg || 0),
     }),
-    { grams: 0, kcal: 0, protein_g: 0, carb_g: 0, fat_g: 0 },
+    { grams: 0, kcal: 0, protein_g: 0, carb_g: 0, fat_g: 0, fiber_g: 0, sugar_g: 0, satfat_g: 0, sodium_mg: 0 },
   )
   const f = (Number(count) || 1) / Math.max(1, recipe.servings)
   return {
@@ -62,5 +66,9 @@ export function recipeServing(recipe, count = 1) {
     protein_g: Math.round(total.protein_g * f),
     carb_g: Math.round(total.carb_g * f),
     fat_g: Math.round(total.fat_g * f),
+    fiber_g: Math.round(total.fiber_g * f),
+    sugar_g: Math.round(total.sugar_g * f),
+    satfat_g: Math.round(total.satfat_g * f),
+    sodium_mg: Math.round(total.sodium_mg * f),
   }
 }

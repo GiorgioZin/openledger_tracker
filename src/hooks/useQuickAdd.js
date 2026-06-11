@@ -14,7 +14,7 @@ export function useQuickAdd(limit = 8) {
     const [{ data: log }, { data: savedMeals }] = await Promise.all([
       supabase
         .from('food_log')
-        .select('name, grams, kcal, protein_g, carb_g, fat_g, created_at')
+        .select('name, grams, kcal, protein_g, carb_g, fat_g, fiber_g, sugar_g, satfat_g, sodium_mg, created_at')
         .order('created_at', { ascending: false }),
       supabase.from('meals').select('*').order('created_at', { ascending: false }),
     ])
@@ -35,6 +35,10 @@ export function useQuickAdd(limit = 8) {
         protein_g: per(r.protein_g),
         carb_g: per(r.carb_g),
         fat_g: per(r.fat_g),
+        fiber_g: per(r.fiber_g || 0),
+        sugar_g: per(r.sugar_g || 0),
+        satfat_g: per(r.satfat_g || 0),
+        sodium_mg: per(r.sodium_mg || 0),
         defaultGrams: grams,
       })
       if (out.length >= limit) break
@@ -62,6 +66,10 @@ export function useQuickAdd(limit = 8) {
       protein_g: Number(it.protein_g),
       carb_g: Number(it.carb_g),
       fat_g: Number(it.fat_g),
+      fiber_g: Number(it.fiber_g || 0),
+      sugar_g: Number(it.sugar_g || 0),
+      satfat_g: Number(it.satfat_g || 0),
+      sodium_mg: Number(it.sodium_mg || 0),
       meal: meal ?? it.meal ?? null,
     }))
     if (rows.length) await supabase.from('food_log').insert(rows)
@@ -78,6 +86,10 @@ export function useQuickAdd(limit = 8) {
         protein_g: Number(it.protein_g),
         carb_g: Number(it.carb_g),
         fat_g: Number(it.fat_g),
+        fiber_g: Number(it.fiber_g || 0),
+        sugar_g: Number(it.sugar_g || 0),
+        satfat_g: Number(it.satfat_g || 0),
+        sodium_mg: Number(it.sodium_mg || 0),
       }))
       await supabase.from('meals').insert({ user_id, name, items: clean })
       await load()

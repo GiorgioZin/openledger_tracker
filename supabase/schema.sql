@@ -17,6 +17,10 @@ create table if not exists public.foods (
   protein_g   numeric not null default 0,
   carb_g      numeric not null default 0,
   fat_g       numeric not null default 0,
+  fiber_g     numeric not null default 0, -- per 100 g
+  sugar_g     numeric not null default 0,
+  satfat_g    numeric not null default 0,
+  sodium_mg   numeric not null default 0,
   source      text not null default 'openfoodfacts',
   fetched_at  timestamptz not null default now()
 );
@@ -34,6 +38,10 @@ create table if not exists public.food_log (
   protein_g  numeric not null default 0,
   carb_g     numeric not null default 0,
   fat_g      numeric not null default 0,
+  fiber_g    numeric not null default 0,
+  sugar_g    numeric not null default 0,
+  satfat_g   numeric not null default 0,
+  sodium_mg  numeric not null default 0,
   meal       text,                       -- 'breakfast' | 'lunch' | 'dinner' | 'snack' | null
   created_at timestamptz not null default now()
 );
