@@ -15,9 +15,77 @@ export default function SettingsPage() {
       {settings.tdee_mode === 'custom' ? (
         <CustomTargets settings={settings} onSave={saveSettings} />
       ) : (
-        <GoalConfig settings={settings} onSave={saveSettings} />
+        <>
+          <Activity settings={settings} onSave={saveSettings} />
+          <GoalConfig settings={settings} onSave={saveSettings} />
+        </>
       )}
     </div>
+  )
+}
+
+const ACTIVITY_OPTIONS = [
+  { value: 'sedentary', label: 'Sedentary', hint: 'little/no exercise' },
+  { value: 'light', label: 'Light', hint: '1–2 sessions/week' },
+  { value: 'moderate', label: 'Moderate', hint: '3–4 sessions/week' },
+  { value: 'active', label: 'Active', hint: '5–6 sessions/week' },
+  { value: 'very_active', label: 'Very active', hint: 'daily / hard training' },
+]
+
+function Activity({ settings, onSave }) {
+  const [steps, setSteps] = useState(settings.daily_steps ?? 0)
+  const [saving, setSaving] = useState(false)
+
+  return (
+    <Section
+      title="Activity"
+      hint="Sets your starting calorie estimate. Once you've logged ~1 week, the adaptive engine measures your real TDEE and takes over."
+    >
+      <div className="space-y-1.5">
+        {ACTIVITY_OPTIONS.map((o) => (
+          <button
+            key={o.value}
+            onClick={() => onSave({ activity_level: o.value })}
+            className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm ${
+              settings.activity_level === o.value
+                ? 'bg-sky-600 text-white'
+                : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+            }`}
+          >
+            <span className="font-medium">{o.label}</span>
+            <span className={settings.activity_level === o.value ? 'text-sky-100' : 'text-slate-500'}>
+              {o.hint}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <label className="block text-sm text-slate-400">
+        Average steps / day
+        <div className="mt-1 flex items-center gap-2">
+          <input
+            type="number"
+            min="0"
+            step="500"
+            inputMode="numeric"
+            value={steps}
+            onChange={(e) => setSteps(e.target.value)}
+            className="w-32 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          />
+          <button
+            onClick={async () => {
+              setSaving(true)
+              await onSave({ daily_steps: parseInt(steps, 10) || 0 })
+              setSaving(false)
+            }}
+            disabled={saving}
+            className="rounded-lg bg-slate-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {saving ? '…' : 'Save'}
+          </button>
+        </div>
+      </label>
+    </Section>
   )
 }
 

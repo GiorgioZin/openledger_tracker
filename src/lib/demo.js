@@ -129,6 +129,8 @@ function seed() {
         goal_rate_kg: -0.4,
         goal_weight_kg: 76,
         tdee_mode: 'dynamic',
+        activity_level: 'moderate',
+        daily_steps: 8000,
         custom_kcal: null,
         custom_protein_g: null,
         custom_carb_g: null,
