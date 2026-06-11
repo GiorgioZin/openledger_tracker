@@ -3,7 +3,7 @@ import { isConfigured, isDemo } from './lib/supabase.js'
 import { useAuth } from './context/AuthContext.jsx'
 import SignIn from './components/SignIn.jsx'
 import SetupNotice from './components/SetupNotice.jsx'
-import Nav from './components/Nav.jsx'
+import { Sidebar, BottomNav } from './components/Nav.jsx'
 import DashboardPage from './components/DashboardPage.jsx'
 import FoodPage from './components/FoodPage.jsx'
 import WeightPage from './components/WeightPage.jsx'
@@ -17,22 +17,25 @@ export default function App() {
   if (!session) return <SignIn />
 
   return (
-    <div className="safe-top mx-auto flex min-h-full max-w-md flex-col">
-      {isDemo && (
-        <div className="bg-amber-500/90 px-4 py-1 text-center text-xs font-medium text-amber-950">
-          Demo mode — sample data, nothing is saved
-        </div>
-      )}
-      <main className="flex-1 px-4 pb-24 pt-4">
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/food" element={<FoodPage />} />
-          <Route path="/weight" element={<WeightPage />} />
-          <Route path="/export" element={<ExportPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-      <Nav />
+    <div className="flex min-h-full">
+      <Sidebar />
+      <div className="safe-top flex min-h-full min-w-0 flex-1 flex-col">
+        {isDemo && (
+          <div className="bg-amber-500/90 px-4 py-1 text-center text-xs font-medium text-amber-950">
+            Demo mode — sample data, nothing is saved
+          </div>
+        )}
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-4 lg:px-8 lg:pb-10 lg:pt-8">
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/food" element={<FoodPage />} />
+            <Route path="/weight" element={<WeightPage />} />
+            <Route path="/export" element={<ExportPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </div>
+      <BottomNav />
     </div>
   )
 }

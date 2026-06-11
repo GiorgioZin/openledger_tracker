@@ -10,26 +10,33 @@ export default function FoodPage() {
   const [selected, setSelected] = useState(null) // food awaiting a grams entry
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto max-w-4xl space-y-5">
       <h1 className="text-2xl font-bold text-white">Food</h1>
       <p className="-mt-3 text-sm text-slate-400">{prettyDate(today)}</p>
 
       <Totals totals={totals} />
 
-      {selected ? (
-        <LogForm
-          food={selected}
-          onCancel={() => setSelected(null)}
-          onLogged={async () => {
-            setSelected(null)
-            await reload()
-          }}
-        />
-      ) : (
-        <FoodSearch onPick={setSelected} />
-      )}
+      <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+        <div>
+          {selected ? (
+            <LogForm
+              food={selected}
+              onCancel={() => setSelected(null)}
+              onLogged={async () => {
+                setSelected(null)
+                await reload()
+              }}
+            />
+          ) : (
+            <FoodSearch onPick={setSelected} />
+          )}
+        </div>
 
-      <LoggedList rows={rows} onChange={reload} />
+        <div>
+          <h2 className="mb-2 text-sm font-medium text-slate-300">Logged today</h2>
+          <LoggedList rows={rows} onChange={reload} />
+        </div>
+      </div>
     </div>
   )
 }

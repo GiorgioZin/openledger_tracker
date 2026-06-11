@@ -13,12 +13,31 @@ function uuid() {
     : 'id-' + Math.random().toString(36).slice(2)
 }
 
-// ~21 days of weigh-ins drifting gently down with daily noise, plus a couple of
-// food entries for today and a goal rate, so the dashboard is alive on load.
+// A realistic day's eating (~2300 kcal). Each row is
+// [name, grams, kcal/100g, protein/100g, carb/100g, fat/100g].
+const DAILY_MENU = [
+  ['Oats', 80, 389, 16.9, 66.3, 6.9],
+  ['Whole milk', 300, 64, 3.3, 4.8, 3.6],
+  ['Eggs', 100, 155, 13, 1.1, 11],
+  ['Chicken breast', 220, 165, 31, 0, 3.6],
+  ['White rice', 350, 130, 2.7, 28, 0.3],
+  ['Olive oil', 20, 884, 0, 0, 100],
+  ['Banana', 120, 89, 1.1, 22.8, 0.3],
+  ['Greek yogurt', 200, 59, 10, 3.6, 0.4],
+  ['Almonds', 30, 579, 21, 22, 50],
+  ['Whole wheat bread', 120, 247, 13, 41, 3.4],
+]
+
+// ~21 days of weigh-ins drifting gently down with daily noise, plus ~2 weeks of
+// logged food (full past days + a partial "today") and a goal rate, so the
+// dashboard and charts are alive — and the adaptive engine has enough intake
+// history to compute a realistic TDEE rather than a cold-start estimate.
 function seed() {
+  const today = todayISO()
+
   const weight_log = []
   for (let i = 20; i >= 0; i--) {
-    const day = addDaysISO(todayISO(), -i)
+    const day = addDaysISO(today, -i)
     const base = 80.5 - (20 - i) * 0.03 // slow downward trend
     const noise = (Math.sin(i * 1.7) + Math.cos(i * 0.6)) * 0.3
     weight_log.push({
@@ -31,12 +50,20 @@ function seed() {
     })
   }
 
-  const today = todayISO()
-  const food_log = [
-    mkFood(today, 'Oats', 80, 389, 16.9, 66.3, 6.9),
-    mkFood(today, 'Whole milk', 250, 64, 3.3, 4.8, 3.6),
-    mkFood(today, 'Chicken breast', 200, 165, 31, 0, 3.6),
-  ]
+  const food_log = []
+  for (let i = 13; i >= 1; i--) {
+    const day = addDaysISO(today, -i)
+    // Small deterministic day-to-day variation in portion sizes (~±8%).
+    const factor = 1 + Math.sin(i * 1.3) * 0.08
+    for (const [name, grams, kcal100, p100, c100, f100] of DAILY_MENU) {
+      food_log.push(mkFood(day, name, Math.round(grams * factor), kcal100, p100, c100, f100))
+    }
+  }
+  // Today is still in progress — only breakfast/lunch logged so far.
+  food_log.push(mkFood(today, 'Oats', 80, 389, 16.9, 66.3, 6.9))
+  food_log.push(mkFood(today, 'Whole milk', 300, 64, 3.3, 4.8, 3.6))
+  food_log.push(mkFood(today, 'Eggs', 100, 155, 13, 1.1, 11))
+  food_log.push(mkFood(today, 'Chicken breast', 200, 165, 31, 0, 3.6))
 
   return { weight_log, food_log, foods: [], workouts: [], workout_sets: [], targets: [], settings: [{ user_id: DEMO_USER.id, goal_rate_pct: -0.5 }] }
 }

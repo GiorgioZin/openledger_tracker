@@ -68,7 +68,7 @@ export default function ExportPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto max-w-xl space-y-5">
       <h1 className="text-2xl font-bold text-white">Export</h1>
       <p className="-mt-3 text-sm text-slate-400">
         Download a multi-sheet Excel file for any date range.

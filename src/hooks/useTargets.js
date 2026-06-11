@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
-import { computeTargets } from '../lib/engine.js'
+import { computeTargets, ewmaTrend } from '../lib/engine.js'
 
 // Fetches the weight series + per-day intake totals and runs the adaptive
-// engine. Returns the computed targets plus the goal rate and a refetch fn.
+// engine. Returns the computed targets, the underlying series (for charts),
+// the goal rate, and a refetch fn.
 export function useTargets() {
   const [targets, setTargets] = useState(null)
+  const [weightSeries, setWeightSeries] = useState([])
+  const [intakeSeries, setIntakeSeries] = useState([])
   const [goalRatePct, setGoalRatePct] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -35,6 +38,8 @@ export function useTargets() {
         .map(([logged_on, kcal]) => ({ logged_on, kcal }))
         .sort((a, b) => a.logged_on.localeCompare(b.logged_on))
 
+      setWeightSeries(ewmaTrend(weights || []))
+      setIntakeSeries(dailyIntake)
       setTargets(computeTargets({ weights: weights || [], dailyIntake, goalRatePct: rate }))
     } catch (e) {
       setError(e.message)
@@ -59,5 +64,5 @@ export function useTargets() {
     [load],
   )
 
-  return { targets, goalRatePct, loading, error, reload: load, saveGoalRate }
+  return { targets, weightSeries, intakeSeries, goalRatePct, loading, error, reload: load, saveGoalRate }
 }
