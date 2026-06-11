@@ -1,13 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
+import { createDemoClient } from './demo.js'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const isConfigured = Boolean(url && anonKey)
+// Demo mode: explicit (VITE_DEMO=true) or implicit (no Supabase creds present).
+export const isDemo =
+  import.meta.env.VITE_DEMO === 'true' || !(url && anonKey)
 
-// When env vars are missing we still export a (dummy) client so imports don't
-// crash; the UI checks `isConfigured` and shows a setup message instead.
-export const supabase = createClient(
-  url || 'https://placeholder.supabase.co',
-  anonKey || 'placeholder-key',
-)
+// In demo mode the app is fully configured (it just talks to an in-memory store).
+export const isConfigured = isDemo || Boolean(url && anonKey)
+
+export const supabase = isDemo
+  ? createDemoClient()
+  : createClient(url, anonKey)

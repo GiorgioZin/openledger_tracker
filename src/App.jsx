@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { isConfigured } from './lib/supabase.js'
+import { isConfigured, isDemo } from './lib/supabase.js'
 import { useAuth } from './context/AuthContext.jsx'
 import SignIn from './components/SignIn.jsx'
 import SetupNotice from './components/SetupNotice.jsx'
@@ -17,8 +17,13 @@ export default function App() {
   if (!session) return <SignIn />
 
   return (
-    <div className="mx-auto flex min-h-full max-w-md flex-col">
-      <main className="safe-top flex-1 px-4 pb-24 pt-4">
+    <div className="safe-top mx-auto flex min-h-full max-w-md flex-col">
+      {isDemo && (
+        <div className="bg-amber-500/90 px-4 py-1 text-center text-xs font-medium text-amber-950">
+          Demo mode — sample data, nothing is saved
+        </div>
+      )}
+      <main className="flex-1 px-4 pb-24 pt-4">
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/food" element={<FoodPage />} />

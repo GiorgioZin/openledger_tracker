@@ -26,7 +26,22 @@ food intake, weight + adaptive engine) plus the **M4** in-app Excel export.
 `M3 — Training` (workout/set logger UI) is scaffolded in the schema and export
 but not yet surfaced as a screen — it's the next milestone.
 
-## Setup
+## Try it instantly (demo mode — no backend)
+
+Want to see the whole app before wiring up Supabase? Run it against built-in
+sample data (seeded weight history, food log, and goal) with no database and no
+network:
+
+```bash
+npm install
+npm run demo     # opens with ~3 weeks of sample data; an amber "Demo mode" banner shows
+```
+
+Everything is clickable (log food from a local catalog, add weights, see the
+adaptive targets and trends); nothing is saved. This is also what runs in CI:
+`npm test` boots the full UI in demo mode and asserts the screens render.
+
+## Setup (real data)
 
 1. **Supabase** — create a project, run [`supabase/schema.sql`](supabase/schema.sql)
    in the SQL editor, and follow [`supabase/README.md`](supabase/README.md) for

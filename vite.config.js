@@ -33,5 +33,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.{js,jsx}'],
+    setupFiles: ['src/test/setup.js'],
+    // Force demo mode in tests so the suite never depends on a real backend,
+    // regardless of any .env present locally.
+    env: { VITE_DEMO: 'true' },
   },
 })
