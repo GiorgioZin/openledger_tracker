@@ -32,6 +32,54 @@ export function computeStreak(loggedDates, today = todayISO()) {
   return { current, longest }
 }
 
+function mondayISO(iso) {
+  const d = new Date(`${iso}T00:00:00`)
+  const dow = (d.getDay() + 6) % 7 // 0 = Monday
+  return addDaysISO(iso, -dow)
+}
+
+/**
+ * Weekly calorie budget with banking. Surplus/deficit on earlier complete days
+ * in the current week rolls into today's adjusted target, so one big (or light)
+ * day flexes across the week instead of being lost.
+ *
+ * @param {object} args
+ * @param {{logged_on:string, kcal:number}[]} args.intakeSeries
+ * @param {Record<string,string>} [args.statusByDate]  partial/unlogged days skip the bank
+ * @param {number} args.target  current daily calorie target
+ * @param {string} [args.today]
+ */
+export function weeklyBudget({ intakeSeries = [], statusByDate = {}, target = 0, today = todayISO() }) {
+  if (!target) return null
+  const weekStart = mondayISO(today)
+  const byDate = new Map(intakeSeries.map((d) => [d.logged_on, Number(d.kcal) || 0]))
+
+  let daysElapsed = 0
+  let consumed = 0
+  let bank = 0 // surplus(+)/deficit(-) carried from earlier complete days this week
+  let cursor = weekStart
+  while (cursor <= today) {
+    daysElapsed++
+    const kcal = byDate.get(cursor) || 0
+    consumed += kcal
+    if (cursor < today) {
+      const st = statusByDate[cursor]
+      if (st !== 'partial' && st !== 'unlogged') bank += target - kcal
+    }
+    cursor = addDaysISO(cursor, 1)
+  }
+
+  const weeklyTarget = target * 7
+  return {
+    weeklyTarget: Math.round(weeklyTarget),
+    consumed: Math.round(consumed),
+    remaining: Math.round(weeklyTarget - consumed),
+    bank: Math.round(bank),
+    todayAdjusted: Math.max(0, Math.round(target + bank)),
+    daysElapsed,
+  }
+}
+
 function mean(xs) {
   if (!xs.length) return null
   return xs.reduce((a, b) => a + b, 0) / xs.length

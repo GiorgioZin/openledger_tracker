@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeInsights, computeStreak } from './insights.js'
+import { computeInsights, computeStreak, weeklyBudget } from './insights.js'
 
 function intake(kcals) {
   // Dates don't matter to the math beyond ordering; build a simple ascending run.
@@ -59,5 +59,36 @@ describe('computeStreak', () => {
 
   it('is zero with no recent logs', () => {
     expect(computeStreak(['2026-01-01'], '2026-03-10').current).toBe(0)
+  })
+})
+
+describe('weeklyBudget', () => {
+  // 2026-03-09 is a Monday; use 2026-03-11 (Wed) as "today".
+  it('banks an earlier deficit into today’s adjusted target', () => {
+    const intake = [
+      { logged_on: '2026-03-09', kcal: 1800 }, // 200 under
+      { logged_on: '2026-03-10', kcal: 1900 }, // 100 under
+      { logged_on: '2026-03-11', kcal: 500 }, // today, partial
+    ]
+    const r = weeklyBudget({ intakeSeries: intake, target: 2000, today: '2026-03-11' })
+    expect(r.weeklyTarget).toBe(14000)
+    expect(r.bank).toBe(300) // 200 + 100 saved on Mon/Tue
+    expect(r.todayAdjusted).toBe(2300) // 2000 + 300 banked
+    expect(r.consumed).toBe(4200)
+  })
+
+  it('excludes partial/unlogged earlier days from the bank', () => {
+    const intake = [
+      { logged_on: '2026-03-09', kcal: 0 },
+      { logged_on: '2026-03-10', kcal: 1500 },
+      { logged_on: '2026-03-11', kcal: 100 },
+    ]
+    const r = weeklyBudget({
+      intakeSeries: intake,
+      statusByDate: { '2026-03-09': 'unlogged' },
+      target: 2000,
+      today: '2026-03-11',
+    })
+    expect(r.bank).toBe(500) // only Tue (2000-1500) counts; Mon is unlogged
   })
 })
