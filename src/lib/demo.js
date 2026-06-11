@@ -81,6 +81,21 @@ function seed() {
     },
   ]
 
+  const recipes = [
+    {
+      id: uuid(),
+      user_id: DEMO_USER.id,
+      name: 'Chicken & rice bowl',
+      servings: 2,
+      items: [
+        mkItem('Chicken breast', 400, 165, 31, 0, 3.6),
+        mkItem('White rice', 500, 130, 2.7, 28, 0.3),
+        mkItem('Olive oil', 20, 884, 0, 0, 100),
+      ],
+      created_at: `${today}T05:00:00.000Z`,
+    },
+  ]
+
   // A few waist measurements trending down over the last few weeks.
   const measurements = []
   for (let i = 21; i >= 0; i -= 7) {
@@ -103,6 +118,7 @@ function seed() {
     workout_sets: [],
     targets: [],
     meals,
+    recipes,
     measurements,
     day_status: [],
     settings: [

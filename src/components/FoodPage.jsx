@@ -4,6 +4,7 @@ import { todayISO, prettyDate, addDaysISO } from '../lib/dates.js'
 import { searchFoods, lookupBarcode } from '../lib/openfoodfacts.js'
 import { useDayTotals } from '../hooks/useDayTotals.js'
 import { useQuickAdd } from '../hooks/useQuickAdd.js'
+import { useRecipes, recipeServing } from '../hooks/useRecipes.js'
 import BarcodeScanner from './BarcodeScanner.jsx'
 
 export default function FoodPage() {
@@ -11,6 +12,7 @@ export default function FoodPage() {
   const [date, setDate] = useState(today)
   const { totals, rows, reload } = useDayTotals(date)
   const { recents, meals, reload: reloadQuick, logItems, saveMeal, deleteMeal } = useQuickAdd()
+  const { recipes, create: createRecipe, remove: removeRecipe } = useRecipes()
   const [selected, setSelected] = useState(null) // food awaiting a grams entry
 
   const isToday = date === today
@@ -21,6 +23,11 @@ export default function FoodPage() {
 
   async function logMeal(meal) {
     await logItems(meal.items, date)
+    await refreshAll()
+  }
+
+  async function logRecipe(recipe, count) {
+    await logItems([recipeServing(recipe, count)], date)
     await refreshAll()
   }
 
@@ -47,6 +54,13 @@ export default function FoodPage() {
         onLogMeal={logMeal}
         onDeleteMeal={deleteMeal}
         onSaveToday={saveDayAsMeal}
+      />
+
+      <RecipesPanel
+        recipes={recipes}
+        onLog={logRecipe}
+        onDelete={removeRecipe}
+        onCreate={createRecipe}
       />
 
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
@@ -191,6 +205,195 @@ function QuickAdd({ recents, meals, canSaveToday, onPickRecent, onLogMeal, onDel
 
 function sumKcal(items) {
   return items.reduce((a, it) => a + Number(it.kcal), 0)
+}
+
+function RecipesPanel({ recipes, onLog, onDelete, onCreate }) {
+  const [building, setBuilding] = useState(false)
+  return (
+    <div className="space-y-3 rounded-2xl bg-slate-800/60 p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-medium text-slate-300">Recipes</h2>
+        <button
+          onClick={() => setBuilding((v) => !v)}
+          className="text-xs font-medium text-sky-400 hover:text-sky-300"
+        >
+          {building ? 'Cancel' : '＋ New recipe'}
+        </button>
+      </div>
+
+      {building && (
+        <RecipeBuilder
+          onCancel={() => setBuilding(false)}
+          onSave={async (name, servings, items) => {
+            await onCreate(name, servings, items)
+            setBuilding(false)
+          }}
+        />
+      )}
+
+      {recipes.length === 0 ? (
+        !building && (
+          <p className="text-xs text-slate-500">
+            Build a recipe from ingredients, then log a serving in one tap.
+          </p>
+        )
+      ) : (
+        <ul className="space-y-2">
+          {recipes.map((r) => (
+            <RecipeRow key={r.id} recipe={r} onLog={onLog} onDelete={onDelete} />
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function RecipeRow({ recipe, onLog, onDelete }) {
+  const [count, setCount] = useState(1)
+  const per = recipeServing(recipe, 1)
+  return (
+    <li className="flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2">
+      <span className="min-w-0">
+        <span className="block truncate text-sm text-white">{recipe.name}</span>
+        <span className="block text-xs text-slate-500">
+          {recipe.servings} servings · {per.kcal} kcal/serving
+        </span>
+      </span>
+      <span className="flex items-center gap-2">
+        <input
+          type="number"
+          min="0.5"
+          step="0.5"
+          value={count}
+          onChange={(e) => setCount(parseFloat(e.target.value) || 1)}
+          className="w-14 rounded-lg bg-slate-900 px-2 py-1.5 text-center text-sm text-white ring-1 ring-slate-700 focus:ring-sky-500"
+          aria-label="Servings to log"
+        />
+        <button
+          onClick={() => onLog(recipe, count)}
+          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white"
+        >
+          Log
+        </button>
+        <button onClick={() => onDelete(recipe.id)} className="text-slate-500" aria-label="Delete recipe">
+          ✕
+        </button>
+      </span>
+    </li>
+  )
+}
+
+function RecipeBuilder({ onCancel, onSave }) {
+  const [name, setName] = useState('')
+  const [servings, setServings] = useState(2)
+  const [items, setItems] = useState([])
+  const [pending, setPending] = useState(null)
+  const [grams, setGrams] = useState(100)
+
+  function addIngredient() {
+    const f = (Number(grams) || 0) / 100
+    setItems((xs) => [
+      ...xs,
+      {
+        name: pending.name,
+        grams: Number(grams),
+        kcal: round(pending.kcal * f),
+        protein_g: round(pending.protein_g * f),
+        carb_g: round(pending.carb_g * f),
+        fat_g: round(pending.fat_g * f),
+      },
+    ])
+    setPending(null)
+    setGrams(100)
+  }
+
+  const totalKcal = Math.round(sumKcal(items))
+  const canSave = name.trim() && items.length > 0
+
+  return (
+    <div className="space-y-3 rounded-xl bg-slate-900/50 p-3">
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Recipe name"
+        className="w-full rounded-lg bg-slate-900 px-3 py-2 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+      />
+      <label className="flex items-center gap-2 text-sm text-slate-400">
+        Servings
+        <input
+          type="number"
+          min="1"
+          step="1"
+          value={servings}
+          onChange={(e) => setServings(parseInt(e.target.value, 10) || 1)}
+          className="w-20 rounded-lg bg-slate-900 px-3 py-2 text-white ring-1 ring-slate-700 focus:ring-sky-500"
+        />
+      </label>
+
+      {items.length > 0 && (
+        <ul className="space-y-1">
+          {items.map((it, i) => (
+            <li key={i} className="flex items-center justify-between rounded-lg bg-slate-800/60 px-3 py-1.5 text-sm">
+              <span className="text-slate-200">
+                {it.name} <span className="text-slate-500">· {it.grams} g · {it.kcal} kcal</span>
+              </span>
+              <button
+                onClick={() => setItems((xs) => xs.filter((_, j) => j !== i))}
+                className="text-slate-500"
+                aria-label="Remove ingredient"
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {pending ? (
+        <div className="flex items-center gap-2 rounded-lg bg-slate-800/60 p-2">
+          <span className="min-w-0 flex-1 truncate text-sm text-white">{pending.name}</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            value={grams}
+            onChange={(e) => setGrams(e.target.value)}
+            className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-sky-500"
+            aria-label="Grams"
+          />
+          <span className="text-xs text-slate-500">g</span>
+          <button onClick={addIngredient} className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white">
+            Add
+          </button>
+          <button onClick={() => setPending(null)} className="text-slate-500" aria-label="Cancel">
+            ✕
+          </button>
+        </div>
+      ) : (
+        <div>
+          <p className="mb-1 text-xs text-slate-500">Add an ingredient:</p>
+          <FoodSearch onPick={setPending} />
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-1">
+        <span className="text-xs text-slate-500">
+          {items.length} ingredients · {totalKcal} kcal total
+        </span>
+        <span className="flex gap-2">
+          <button onClick={onCancel} className="rounded-lg bg-slate-700 px-3 py-1.5 text-sm text-white">
+            Cancel
+          </button>
+          <button
+            onClick={() => onSave(name.trim(), servings, items)}
+            disabled={!canSave}
+            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            Save recipe
+          </button>
+        </span>
+      </div>
+    </div>
+  )
 }
 
 function Totals({ totals }) {
