@@ -127,6 +127,17 @@ create table if not exists public.meals (
   created_at timestamptz not null default now()
 );
 
+-- Recipes: composite foods made of ingredients, divided into servings. Logging
+-- a serving adds (recipe total / servings) to the food log.
+create table if not exists public.recipes (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name       text not null,
+  servings   integer not null default 1,
+  items      jsonb not null default '[]',  -- ingredients, per-portion as entered
+  created_at timestamptz not null default now()
+);
+
 -- ---------------------------------------------------------------------------
 -- Indexes
 -- ---------------------------------------------------------------------------
@@ -137,6 +148,7 @@ create index if not exists workout_sets_workout_idx  on public.workout_sets (wor
 create index if not exists foods_user_barcode_idx    on public.foods (user_id, barcode);
 create index if not exists meals_user_idx             on public.meals (user_id, created_at desc);
 create index if not exists measurements_user_kind_idx  on public.measurements (user_id, kind, logged_on);
+create index if not exists recipes_user_idx            on public.recipes (user_id, created_at desc);
 
 -- ---------------------------------------------------------------------------
 -- Row-level security: a user only ever sees their own rows.
@@ -151,12 +163,13 @@ alter table public.settings     enable row level security;
 alter table public.meals        enable row level security;
 alter table public.day_status   enable row level security;
 alter table public.measurements enable row level security;
+alter table public.recipes      enable row level security;
 
 do $$
 declare t text;
 begin
   foreach t in array array[
-    'foods','food_log','weight_log','workouts','workout_sets','targets','settings','meals','day_status','measurements'
+    'foods','food_log','weight_log','workouts','workout_sets','targets','settings','meals','day_status','measurements','recipes'
   ] loop
     execute format(
       'create policy %1$I_owner on public.%1$I
