@@ -1,26 +1,29 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase.js'
-import { todayISO, prettyDate } from '../lib/dates.js'
+import { todayISO, prettyDate, addDaysISO } from '../lib/dates.js'
 import { searchFoods, lookupBarcode } from '../lib/openfoodfacts.js'
 import { useDayTotals } from '../hooks/useDayTotals.js'
 import { useQuickAdd } from '../hooks/useQuickAdd.js'
 
 export default function FoodPage() {
   const today = todayISO()
-  const { totals, rows, reload } = useDayTotals(today)
+  const [date, setDate] = useState(today)
+  const { totals, rows, reload } = useDayTotals(date)
   const { recents, meals, reload: reloadQuick, logItems, saveMeal, deleteMeal } = useQuickAdd()
   const [selected, setSelected] = useState(null) // food awaiting a grams entry
+
+  const isToday = date === today
 
   async function refreshAll() {
     await Promise.all([reload(), reloadQuick()])
   }
 
   async function logMeal(meal) {
-    await logItems(meal.items)
+    await logItems(meal.items, date)
     await refreshAll()
   }
 
-  async function saveTodayAsMeal() {
+  async function saveDayAsMeal() {
     if (!rows.length) return
     const name = prompt('Name this meal', 'My meal')
     if (!name) return
@@ -30,7 +33,8 @@ export default function FoodPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-5">
       <h1 className="text-2xl font-bold text-white">Food</h1>
-      <p className="-mt-3 text-sm text-slate-400">{prettyDate(today)}</p>
+
+      <DateNav date={date} today={today} onChange={setDate} />
 
       <Totals totals={totals} />
 
@@ -41,7 +45,7 @@ export default function FoodPage() {
         onPickRecent={setSelected}
         onLogMeal={logMeal}
         onDeleteMeal={deleteMeal}
-        onSaveToday={saveTodayAsMeal}
+        onSaveToday={saveDayAsMeal}
       />
 
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
@@ -49,6 +53,7 @@ export default function FoodPage() {
           {selected ? (
             <LogForm
               food={selected}
+              dateISO={date}
               onCancel={() => setSelected(null)}
               onLogged={async () => {
                 setSelected(null)
@@ -61,10 +66,50 @@ export default function FoodPage() {
         </div>
 
         <div>
-          <h2 className="mb-2 text-sm font-medium text-slate-300">Logged today</h2>
+          <h2 className="mb-2 text-sm font-medium text-slate-300">
+            Logged {isToday ? 'today' : prettyDate(date)}
+          </h2>
           <LoggedList rows={rows} onChange={refreshAll} />
         </div>
       </div>
+    </div>
+  )
+}
+
+function DateNav({ date, today, onChange }) {
+  const isToday = date === today
+  return (
+    <div className="-mt-3 flex items-center gap-2">
+      <button
+        onClick={() => onChange(addDaysISO(date, -1))}
+        className="rounded-lg bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700"
+        aria-label="Previous day"
+      >
+        ‹
+      </button>
+      <input
+        type="date"
+        value={date}
+        max={today}
+        onChange={(e) => onChange(e.target.value || today)}
+        className="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+      />
+      <button
+        onClick={() => onChange(addDaysISO(date, 1))}
+        disabled={isToday}
+        className="rounded-lg bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700 disabled:opacity-40"
+        aria-label="Next day"
+      >
+        ›
+      </button>
+      {!isToday && (
+        <button
+          onClick={() => onChange(today)}
+          className="ml-1 rounded-lg px-2 py-2 text-xs font-medium text-sky-400 hover:text-sky-300"
+        >
+          Today
+        </button>
+      )}
     </div>
   )
 }
@@ -238,7 +283,7 @@ function FoodSearch({ onPick }) {
   )
 }
 
-function LogForm({ food, onCancel, onLogged }) {
+function LogForm({ food, dateISO, onCancel, onLogged }) {
   const [grams, setGrams] = useState(food.defaultGrams ?? 100)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
@@ -273,7 +318,7 @@ function LogForm({ food, onCancel, onLogged }) {
 
       const { error } = await supabase.from('food_log').insert({
         user_id,
-        logged_on: todayISO(),
+        logged_on: dateISO || todayISO(),
         food_id,
         name: food.name,
         grams: Number(grams),

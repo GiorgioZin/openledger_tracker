@@ -5,6 +5,7 @@ const tabs = [
   { to: '/', label: 'Today', icon: '◎' },
   { to: '/food', label: 'Food', icon: '🍽' },
   { to: '/weight', label: 'Weight', icon: '⚖' },
+  { to: '/trends', label: 'Trends', icon: '📈' },
   { to: '/settings', label: 'Settings', icon: '⚙' },
   { to: '/export', label: 'Export', icon: '⤓' },
 ]
