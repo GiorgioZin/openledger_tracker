@@ -102,21 +102,11 @@ create table if not exists public.settings (
   tdee_mode      text not null default 'dynamic', -- 'dynamic' (adaptive) or 'custom'
   activity_level text not null default 'moderate', -- sedentary|light|moderate|active|very_active
   daily_steps    integer not null default 0,      -- average steps/day, feeds the estimate
-  fast_target_hours integer not null default 16,   -- intermittent-fasting goal window
   custom_kcal     numeric,                      -- used when tdee_mode = 'custom'
   custom_protein_g numeric,
   custom_carb_g    numeric,
   custom_fat_g     numeric,
   updated_at     timestamptz not null default now()
-);
-
--- Intermittent-fasting windows. An open fast has ended_at = null.
-create table if not exists public.fasts (
-  id         uuid primary key default gen_random_uuid(),
-  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  started_at timestamptz not null default now(),
-  ended_at   timestamptz,
-  created_at timestamptz not null default now()
 );
 
 -- Per-day logging completeness. Absent row = 'complete'. Days marked 'partial'
@@ -188,7 +178,6 @@ create index if not exists foods_user_barcode_idx    on public.foods (user_id, b
 create index if not exists meals_user_idx             on public.meals (user_id, created_at desc);
 create index if not exists measurements_user_kind_idx  on public.measurements (user_id, kind, logged_on);
 create index if not exists recipes_user_idx            on public.recipes (user_id, created_at desc);
-create index if not exists fasts_user_idx              on public.fasts (user_id, started_at desc);
 create index if not exists favorites_user_idx          on public.favorites (user_id, created_at desc);
 
 -- ---------------------------------------------------------------------------
@@ -205,14 +194,13 @@ alter table public.meals        enable row level security;
 alter table public.day_status   enable row level security;
 alter table public.measurements enable row level security;
 alter table public.recipes      enable row level security;
-alter table public.fasts        enable row level security;
 alter table public.favorites    enable row level security;
 
 do $$
 declare t text;
 begin
   foreach t in array array[
-    'foods','food_log','weight_log','workouts','workout_sets','targets','settings','meals','day_status','measurements','recipes','fasts','favorites'
+    'foods','food_log','weight_log','workouts','workout_sets','targets','settings','meals','day_status','measurements','recipes','favorites'
   ] loop
     execute format(
       'create policy %1$I_owner on public.%1$I
