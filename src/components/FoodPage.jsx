@@ -7,6 +7,7 @@ import { useQuickAdd } from '../hooks/useQuickAdd.js'
 import { useRecipes, recipeServing } from '../hooks/useRecipes.js'
 import { useToast } from './Toast.jsx'
 import BarcodeScanner from './BarcodeScanner.jsx'
+import { PageHeader, Button, inputCls } from './ui.jsx'
 
 const MEALS = ['breakfast', 'lunch', 'dinner', 'snack']
 
@@ -73,9 +74,9 @@ export default function FoodPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
-      <h1 className="text-2xl font-bold text-white">Food</h1>
-
-      <DateNav date={date} today={today} onChange={setDate} />
+      <PageHeader title="Food" subtitle={isToday ? 'Today' : prettyDate(date)}>
+        <DateNav date={date} today={today} onChange={setDate} />
+      </PageHeader>
 
       <Totals totals={totals} />
 
@@ -125,7 +126,7 @@ export default function FoodPage() {
               <FoodSearch onPick={setSelected} />
               <button
                 onClick={() => setQuickAdd(true)}
-                className="mt-3 w-full rounded-lg border border-dashed border-slate-700 py-2.5 text-sm text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                className="mt-3 w-full rounded-lg border border-dashed border-slate-700 py-2.5 text-sm text-slate-400 transition-colors hover:border-brand-500/50 hover:text-slate-200"
               >
                 ＋ Quick add calories
               </button>
@@ -134,7 +135,7 @@ export default function FoodPage() {
         </div>
 
         <div>
-          <h2 className="mb-2 text-sm font-medium text-slate-300">
+          <h2 className="mb-2 text-sm font-semibold text-slate-200">
             Logged {isToday ? 'today' : prettyDate(date)}
           </h2>
           <LoggedList rows={rows} onChange={refreshAll} />
@@ -147,10 +148,10 @@ export default function FoodPage() {
 function DateNav({ date, today, onChange }) {
   const isToday = date === today
   return (
-    <div className="-mt-3 flex items-center gap-2">
+    <div className="flex items-center gap-2">
       <button
         onClick={() => onChange(addDaysISO(date, -1))}
-        className="rounded-lg bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700"
+        className="rounded-lg bg-slate-800 px-3 py-2 text-slate-300 ring-1 ring-slate-700 transition-colors hover:bg-slate-700"
         aria-label="Previous day"
       >
         ‹
@@ -160,12 +161,12 @@ function DateNav({ date, today, onChange }) {
         value={date}
         max={today}
         onChange={(e) => onChange(e.target.value || today)}
-        className="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
+        className={`${inputCls} px-3 py-2 text-sm`}
       />
       <button
         onClick={() => onChange(addDaysISO(date, 1))}
         disabled={isToday}
-        className="rounded-lg bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700 disabled:opacity-40"
+        className="rounded-lg bg-slate-800 px-3 py-2 text-slate-300 ring-1 ring-slate-700 transition-colors hover:bg-slate-700 disabled:opacity-40"
         aria-label="Next day"
       >
         ›
@@ -209,7 +210,7 @@ function QuickAdd({ recents, meals, favorites, canSaveToday, onPickRecent, onLog
   const toggle = (food) =>
     favNames.has(food.name.toLowerCase()) ? onRemoveFav(food.name) : onAddFav(food)
   return (
-    <div className="space-y-3 rounded-2xl bg-slate-800/60 p-4">
+    <div className="space-y-3 rounded-2xl bg-slate-800/50 p-4 shadow-card ring-1 ring-white/5">
       {favorites.length > 0 && (
         <div>
           <h2 className="mb-2 text-sm font-medium text-slate-300">Favorites</h2>
@@ -240,7 +241,7 @@ function QuickAdd({ recents, meals, favorites, canSaveToday, onPickRecent, onLog
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-slate-300">Saved meals</h2>
+          <h2 className="text-sm font-semibold text-slate-200">Saved meals</h2>
           <button
             onClick={onSaveToday}
             disabled={!canSaveToday}
@@ -258,7 +259,7 @@ function QuickAdd({ recents, meals, favorites, canSaveToday, onPickRecent, onLog
             {meals.map((m) => (
               <li
                 key={m.id}
-                className="flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2"
+                className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2 ring-1 ring-white/5"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm text-white">{m.name}</span>
@@ -297,9 +298,9 @@ function sumKcal(items) {
 function RecipesPanel({ recipes, onLog, onDelete, onCreate }) {
   const [building, setBuilding] = useState(false)
   return (
-    <div className="space-y-3 rounded-2xl bg-slate-800/60 p-4">
+    <div className="space-y-3 rounded-2xl bg-slate-800/50 p-4 shadow-card ring-1 ring-white/5">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-slate-300">Recipes</h2>
+        <h2 className="text-sm font-semibold text-slate-200">Recipes</h2>
         <button
           onClick={() => setBuilding((v) => !v)}
           className="text-xs font-medium text-brand-400 hover:text-brand-300"
@@ -339,7 +340,7 @@ function RecipeRow({ recipe, onLog, onDelete }) {
   const [count, setCount] = useState(1)
   const per = recipeServing(recipe, 1)
   return (
-    <li className="flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2">
+    <li className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2 ring-1 ring-white/5">
       <span className="min-w-0">
         <span className="block truncate text-sm text-white">{recipe.name}</span>
         <span className="block text-xs text-slate-500">
@@ -497,7 +498,7 @@ function RecipeBuilder({ onCancel, onSave }) {
 
 function Totals({ totals }) {
   return (
-    <div className="space-y-2 rounded-2xl bg-slate-800/60 p-3">
+    <div className="space-y-2 rounded-2xl bg-slate-800/50 p-3 shadow-card ring-1 ring-white/5">
       <div className="grid grid-cols-4 gap-2 text-center">
         {[
           ['kcal', Math.round(totals.kcal)],
@@ -598,24 +599,20 @@ function FoodSearch({ onPick }) {
           onChange={(e) => setQ(e.target.value)}
           inputMode="search"
           placeholder="Search or paste a barcode"
-          className="min-w-0 flex-1 rounded-lg bg-slate-800 px-4 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-brand-500"
+          className={`${inputCls} min-w-0 flex-1 px-4 py-3`}
         />
         <button
           type="button"
           onClick={() => setScanning(true)}
-          className="rounded-lg bg-slate-700 px-3 font-semibold text-white"
+          className="rounded-lg bg-slate-700 px-3 font-semibold text-white ring-1 ring-slate-600 transition-colors hover:bg-slate-600"
           title="Scan a barcode"
           aria-label="Scan a barcode"
         >
           📷
         </button>
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-brand-600 px-4 font-semibold text-white disabled:opacity-50"
-        >
+        <Button type="submit" disabled={busy} size="lg" className="px-4">
           {busy ? '…' : 'Go'}
-        </button>
+        </Button>
       </form>
 
       {busy && <p className="mt-2 text-xs text-slate-500">Searching…</p>}
@@ -626,7 +623,7 @@ function FoodSearch({ onPick }) {
           <li key={f.barcode || i}>
             <button
               onClick={() => onPick(f)}
-              className="flex w-full items-center justify-between rounded-lg bg-slate-800/60 px-4 py-3 text-left"
+              className="flex w-full items-center justify-between rounded-lg bg-slate-800/50 px-4 py-3 text-left ring-1 ring-white/5 transition-colors hover:bg-slate-800 hover:ring-brand-500/40"
             >
               <span>
                 <span className="block text-white">{f.name}</span>
@@ -636,7 +633,7 @@ function FoodSearch({ onPick }) {
                   {Math.round(f.carb_g)} F{Math.round(f.fat_g)}
                 </span>
               </span>
-              <span className="text-brand-400">＋</span>
+              <span className="text-lg text-brand-400">＋</span>
             </button>
           </li>
         ))}
@@ -705,7 +702,7 @@ function LogForm({ food, dateISO, onCancel, onLogged }) {
   }
 
   return (
-    <div className="rounded-2xl bg-slate-800/60 p-4">
+    <div className="rounded-2xl bg-slate-800/50 p-4 shadow-card ring-1 ring-white/5">
       <div className="font-semibold text-white">{food.name}</div>
       {food.brand && <div className="text-xs text-slate-400">{food.brand}</div>}
 
@@ -801,7 +798,11 @@ function LoggedList({ rows, onChange }) {
     })
   }
   if (!rows.length) {
-    return <p className="text-sm text-slate-500">Nothing logged yet today.</p>
+    return (
+      <div className="rounded-2xl bg-slate-800/40 px-4 py-8 text-center text-sm text-slate-500 ring-1 ring-white/5">
+        Nothing logged yet. Search a food or quick-add calories to get started.
+      </div>
+    )
   }
 
   // Group by meal, preserving a natural meal order.
@@ -875,7 +876,7 @@ function LoggedItem({ row, onChange, onRemove }) {
 
   if (editing) {
     return (
-      <li className="space-y-2 rounded-lg bg-slate-800/60 px-4 py-3">
+      <li className="space-y-2 rounded-lg bg-slate-800/50 px-4 py-3 ring-1 ring-white/5">
         <div className="flex items-center justify-between">
           <span className="text-sm text-white">{row.name}</span>
           <span className="flex items-center gap-2">
@@ -939,7 +940,7 @@ function LoggedItem({ row, onChange, onRemove }) {
   }
 
   return (
-    <li className="flex items-center justify-between rounded-lg bg-slate-800/60 px-4 py-3">
+    <li className="flex items-center justify-between rounded-lg bg-slate-800/50 px-4 py-3 ring-1 ring-white/5">
       <span>
         <span className="block text-white">{row.name}</span>
         <span className="block text-xs text-slate-400">
@@ -1010,7 +1011,7 @@ function QuickAddForm({ dateISO, onCancel, onLogged }) {
   }
 
   return (
-    <div className="rounded-2xl bg-slate-800/60 p-4">
+    <div className="rounded-2xl bg-slate-800/50 p-4 shadow-card ring-1 ring-white/5">
       <div className="font-semibold text-white">Quick add</div>
       <p className="text-xs text-slate-400">Log calories (and macros, optional) without searching.</p>
 
