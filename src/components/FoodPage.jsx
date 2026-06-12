@@ -5,9 +5,10 @@ import { searchFoods, lookupBarcode } from '../lib/openfoodfacts.js'
 import { useDayTotals } from '../hooks/useDayTotals.js'
 import { useQuickAdd } from '../hooks/useQuickAdd.js'
 import { useRecipes, recipeServing } from '../hooks/useRecipes.js'
+import { useTargets } from '../hooks/useTargets.js'
 import { useToast } from './Toast.jsx'
 import BarcodeScanner from './BarcodeScanner.jsx'
-import { PageHeader, Button, inputCls } from './ui.jsx'
+import { PageHeader, Button, Card, inputCls } from './ui.jsx'
 
 const MEALS = ['breakfast', 'lunch', 'dinner', 'snack']
 
@@ -27,6 +28,7 @@ export default function FoodPage() {
   const { recents, meals, favorites, reload: reloadQuick, logItems, saveMeal, deleteMeal, restoreMeal, addFavorite, removeFavorite } =
     useQuickAdd()
   const { recipes, create: createRecipe, remove: removeRecipe, restore: restoreRecipe } = useRecipes()
+  const { targets } = useTargets()
   const [selected, setSelected] = useState(null) // food awaiting a grams entry
   const [quickAdd, setQuickAdd] = useState(false)
   const toast = useToast()
@@ -135,6 +137,13 @@ export default function FoodPage() {
 
         {/* Aside — running totals + what's logged for the day. */}
         <aside className="space-y-4 lg:sticky lg:top-4">
+          <ProteinGap
+            targets={targets}
+            totals={totals}
+            favorites={favorites}
+            recents={recents}
+            onPick={setSelected}
+          />
           <Totals totals={totals} />
           <div className="rounded-2xl bg-slate-800/50 p-4 shadow-card ring-1 ring-white/5">
             <h2 className="mb-3 text-sm font-semibold text-slate-200">
@@ -300,17 +309,28 @@ function sumKcal(items) {
 
 function RecipesPanel({ recipes, onLog, onDelete, onCreate }) {
   const [building, setBuilding] = useState(false)
+  const [prepping, setPrepping] = useState(false)
   return (
     <div className="space-y-3 rounded-2xl bg-slate-800/50 p-4 shadow-card ring-1 ring-white/5">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-slate-200">Recipes</h2>
-        <button
-          onClick={() => setBuilding((v) => !v)}
-          className="text-xs font-medium text-brand-400 hover:text-brand-300"
-        >
-          {building ? 'Cancel' : '＋ New recipe'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setPrepping((v) => !v)}
+            className="text-xs font-medium text-brand-400 hover:text-brand-300"
+          >
+            {prepping ? 'Close' : 'Meal prep'}
+          </button>
+          <button
+            onClick={() => setBuilding((v) => !v)}
+            className="text-xs font-medium text-brand-400 hover:text-brand-300"
+          >
+            {building ? 'Cancel' : '＋ New recipe'}
+          </button>
+        </div>
       </div>
+
+      {prepping && <MealPrep recipes={recipes} />}
 
       {building && (
         <RecipeBuilder
@@ -335,6 +355,79 @@ function RecipesPanel({ recipes, onLog, onDelete, onCreate }) {
           ))}
         </ul>
       )}
+    </div>
+  )
+}
+
+// Batch-cooking helper: pick a recipe + number of containers, get per-container
+// macros and a scaled shopping list.
+function MealPrep({ recipes }) {
+  const [id, setId] = useState('')
+  const recipe = recipes.find((r) => String(r.id) === String(id)) || recipes[0]
+  const [containers, setContainers] = useState('')
+
+  if (recipes.length === 0) {
+    return (
+      <p className="rounded-xl bg-slate-900/50 p-3 text-xs text-slate-500">
+        Build a recipe first to plan a batch and get a shopping list.
+      </p>
+    )
+  }
+
+  const n = Math.max(1, Math.round(Number(containers) || recipe.servings))
+  const per = recipeServing(recipe, 1)
+  const scale = n / Math.max(1, recipe.servings)
+
+  return (
+    <div className="space-y-3 rounded-xl bg-slate-900/50 p-3">
+      <div className="flex items-center gap-2">
+        <select
+          value={String(recipe.id)}
+          onChange={(e) => {
+            setId(e.target.value)
+            setContainers('')
+          }}
+          className={`${inputCls} min-w-0 flex-1 px-3 py-2 text-sm`}
+        >
+          {recipes.map((r) => (
+            <option key={r.id} value={String(r.id)}>
+              {r.name}
+            </option>
+          ))}
+        </select>
+        <label className="flex items-center gap-1.5 text-xs text-slate-400">
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={containers}
+            placeholder={String(recipe.servings)}
+            onChange={(e) => setContainers(e.target.value)}
+            className="w-16 rounded-lg bg-slate-900 px-2 py-2 text-center text-sm text-white ring-1 ring-slate-700 focus:ring-brand-500"
+            aria-label="Containers"
+          />
+          containers
+        </label>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2 text-center text-sm">
+        <Mac k="kcal" v={per.kcal} />
+        <Mac k="P" v={per.protein_g} />
+        <Mac k="C" v={per.carb_g} />
+        <Mac k="F" v={per.fat_g} />
+      </div>
+      <p className="text-[11px] text-slate-500">Per container</p>
+
+      <div>
+        <p className="mb-1 text-xs font-semibold text-slate-300">Shopping list ({n}×)</p>
+        <ul className="space-y-1">
+          {recipe.items.map((it, i) => (
+            <li key={i} className="text-xs text-slate-400">
+              {it.name} · {Math.round(Number(it.grams || 0) * scale)} g
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }
@@ -496,6 +589,52 @@ function RecipeBuilder({ onCancel, onSave }) {
         </span>
       </div>
     </div>
+  )
+}
+
+// Anti-binge nudge: when protein is well short of target, suggest a clean
+// portion of your highest-protein favourite/recent to close the gap.
+function ProteinGap({ targets, totals, favorites, recents, onPick }) {
+  if (!targets?.protein_g) return null
+  const remaining = Math.round(targets.protein_g - totals.protein_g)
+  if (remaining <= 20) return null
+
+  const pool = [...favorites, ...recents].filter((it) => Number(it.protein_g) > 0)
+  let best = null
+  for (const it of pool) {
+    if (!best || Number(it.protein_g) > Number(best.protein_g)) best = it
+  }
+
+  const suggested = best
+    ? Math.min(500, Math.max(0, Math.round(remaining / (Number(best.protein_g) / 100))))
+    : 0
+
+  return (
+    <Card title="Protein gap" className="space-y-2">
+      <p className="text-sm text-slate-300">
+        <span className="font-semibold tabular-nums text-white">{remaining} g</span> protein left
+        today. Eat it cleanly.
+      </p>
+      {best && suggested > 0 ? (
+        <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-900/50 px-3 py-2 ring-1 ring-white/5">
+          <span className="min-w-0">
+            <span className="block truncate text-sm text-white">{best.name}</span>
+            <span className="block text-xs text-slate-500">≈{suggested} g closes the gap</span>
+          </span>
+          <Button
+            variant="success"
+            size="sm"
+            onClick={() => onPick({ ...best, defaultGrams: suggested })}
+          >
+            Log
+          </Button>
+        </div>
+      ) : (
+        <p className="text-xs text-slate-500">
+          Add a high-protein favourite to get a one-tap suggestion.
+        </p>
+      )}
+    </Card>
   )
 }
 
@@ -1031,6 +1170,8 @@ function QuickAddForm({ dateISO, onCancel, onLogged }) {
         <Field label="F" value={f} onChange={setF} />
       </div>
 
+      <MacroAnomaly kcal={kcal} p={p} c={c} f={f} />
+
       <div className="mt-3 inline-flex flex-wrap gap-1 rounded-lg bg-slate-900 p-1 ring-1 ring-slate-700">
         {MEALS.map((m) => (
           <button
@@ -1061,6 +1202,24 @@ function QuickAddForm({ dateISO, onCancel, onLogged }) {
         </button>
       </div>
     </div>
+  )
+}
+
+// Non-blocking sanity check: if the typed calories and the macros disagree by
+// more than 30%, nudge the user. Never prevents saving.
+function MacroAnomaly({ kcal, p, c, f }) {
+  const k = parseFloat(kcal) || 0
+  const macroKcal = Math.round(
+    (parseFloat(p) || 0) * 4 + (parseFloat(c) || 0) * 4 + (parseFloat(f) || 0) * 9,
+  )
+  const hasMacro = (parseFloat(p) || 0) + (parseFloat(c) || 0) + (parseFloat(f) || 0) > 0
+  if (!(k > 0 && hasMacro && macroKcal > 0)) return null
+  const rel = Math.abs(k - macroKcal) / Math.max(k, macroKcal)
+  if (rel <= 0.3) return null
+  return (
+    <p className="mt-2 text-xs text-amber-400">
+      Check this: macros imply ≈{macroKcal} kcal.
+    </p>
   )
 }
 
