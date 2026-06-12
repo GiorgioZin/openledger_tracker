@@ -147,9 +147,10 @@ export function CaloriesChart({ series, target, statusByDate = {}, days = 14, he
 
 /**
  * Circular progress ring. Shows `consumed / max` as an arc; the centre text is
- * caller-supplied (e.g. the remaining amount).
+ * caller-supplied (e.g. the remaining amount). `sub` adds a small caption under
+ * the label — used to surface the consumed/target figures.
  */
-export function Ring({ consumed, max, color = '#10b981', label, center, size = 80 }) {
+export function Ring({ consumed, max, color = '#10b981', label, center, sub, size = 80 }) {
   const c = size / 2
   const stroke = 9
   const r = (size - stroke) / 2
@@ -187,6 +188,7 @@ export function Ring({ consumed, max, color = '#10b981', label, center, size = 8
         </text>
       </svg>
       {label && <span className="text-xs text-slate-400">{label}</span>}
+      {sub && <span className="text-[10px] tabular-nums text-slate-500">{sub}</span>}
     </div>
   )
 }

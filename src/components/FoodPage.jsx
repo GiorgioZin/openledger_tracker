@@ -73,35 +73,14 @@ export default function FoodPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5">
+    <div className="mx-auto max-w-5xl space-y-5">
       <PageHeader title="Food" subtitle={isToday ? 'Today' : prettyDate(date)}>
         <DateNav date={date} today={today} onChange={setDate} />
       </PageHeader>
 
-      <Totals totals={totals} />
-
-      <QuickAdd
-        recents={recents}
-        meals={meals}
-        favorites={favorites}
-        canSaveToday={rows.length > 0}
-        onPickRecent={setSelected}
-        onLogMeal={logMeal}
-        onDeleteMeal={deleteMealUndoable}
-        onSaveToday={saveDayAsMeal}
-        onAddFav={addFavorite}
-        onRemoveFav={removeFavUndoable}
-      />
-
-      <RecipesPanel
-        recipes={recipes}
-        onLog={logRecipe}
-        onDelete={removeRecipeUndoable}
-        onCreate={createRecipe}
-      />
-
-      <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
-        <div>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+        {/* Main column — find & add foods, with the search bar up top. */}
+        <div className="space-y-4 lg:min-w-0">
           {selected ? (
             <LogForm
               food={selected}
@@ -122,7 +101,7 @@ export default function FoodPage() {
               }}
             />
           ) : (
-            <>
+            <div className="rounded-2xl bg-slate-800/50 p-4 shadow-card ring-1 ring-white/5">
               <FoodSearch onPick={setSelected} />
               <button
                 onClick={() => setQuickAdd(true)}
@@ -130,16 +109,40 @@ export default function FoodPage() {
               >
                 ＋ Quick add calories
               </button>
-            </>
+            </div>
           )}
+
+          <QuickAdd
+            recents={recents}
+            meals={meals}
+            favorites={favorites}
+            canSaveToday={rows.length > 0}
+            onPickRecent={setSelected}
+            onLogMeal={logMeal}
+            onDeleteMeal={deleteMealUndoable}
+            onSaveToday={saveDayAsMeal}
+            onAddFav={addFavorite}
+            onRemoveFav={removeFavUndoable}
+          />
+
+          <RecipesPanel
+            recipes={recipes}
+            onLog={logRecipe}
+            onDelete={removeRecipeUndoable}
+            onCreate={createRecipe}
+          />
         </div>
 
-        <div>
-          <h2 className="mb-2 text-sm font-semibold text-slate-200">
-            Logged {isToday ? 'today' : prettyDate(date)}
-          </h2>
-          <LoggedList rows={rows} onChange={refreshAll} />
-        </div>
+        {/* Aside — running totals + what's logged for the day. */}
+        <aside className="space-y-4 lg:sticky lg:top-4">
+          <Totals totals={totals} />
+          <div className="rounded-2xl bg-slate-800/50 p-4 shadow-card ring-1 ring-white/5">
+            <h2 className="mb-3 text-sm font-semibold text-slate-200">
+              Logged {isToday ? 'today' : prettyDate(date)}
+            </h2>
+            <LoggedList rows={rows} onChange={refreshAll} />
+          </div>
+        </aside>
       </div>
     </div>
   )

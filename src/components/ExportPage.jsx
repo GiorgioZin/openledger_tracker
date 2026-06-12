@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { todayISO, addDaysISO } from '../lib/dates.js'
 import { exportWorkbook } from '../lib/export.js'
+import { Link } from 'react-router-dom'
 import { PageHeader, Card, Button, inputCls } from './ui.jsx'
 
 export default function ExportPage() {
@@ -70,6 +71,9 @@ export default function ExportPage() {
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
+      <Link to="/settings" className="inline-flex text-sm text-slate-400 hover:text-slate-200">
+        ← Settings
+      </Link>
       <PageHeader title="Export" subtitle="Download a multi-sheet Excel file for any date range." />
 
       <Card bodyClass="space-y-3">
