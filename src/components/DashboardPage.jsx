@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { todayISO, prettyDate } from '../lib/dates.js'
 import { useTargets } from '../hooks/useTargets.js'
 import { useDayTotals } from '../hooks/useDayTotals.js'
-import { useFasting } from '../hooks/useFasting.js'
 import { computeInsights, computeStreak, weeklyBudget } from '../lib/insights.js'
 import { WeightChart, CaloriesChart, Ring } from './Charts.jsx'
 
@@ -21,7 +19,6 @@ export default function DashboardPage() {
     setDayStatus,
   } = useTargets()
   const { totals } = useDayTotals(today)
-  const fasting = useFasting()
 
   const insights = targets
     ? computeInsights({
@@ -154,8 +151,6 @@ export default function DashboardPage() {
 
             <RemainingCard totals={totals} targets={targets} />
 
-            <FastingCard {...fasting} />
-
             <Link
               to="/settings"
               className="block rounded-2xl bg-slate-800/60 p-4 text-sm text-slate-300 hover:bg-slate-800"
@@ -200,82 +195,6 @@ function DayStatusControl({ status, onChange }) {
           </button>
         ))}
       </div>
-    </section>
-  )
-}
-
-const FAST_TARGETS = [14, 16, 18, 20]
-
-function FastingCard({ openFast, targetHours, startFast, endFast, saveTarget }) {
-  const [now, setNow] = useState(Date.now())
-  useEffect(() => {
-    if (!openFast) return undefined
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
-  }, [openFast])
-
-  if (openFast) {
-    const ms = Math.max(0, now - new Date(openFast.started_at).getTime())
-    const hours = ms / 3600000
-    const pct = Math.min(100, (hours / targetHours) * 100)
-    const reached = hours >= targetHours
-    const hh = Math.floor(hours)
-    const mm = Math.floor((ms % 3600000) / 60000)
-    const ss = Math.floor((ms % 60000) / 1000)
-    return (
-      <section className="rounded-2xl bg-slate-800/60 p-4">
-        <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="text-sm font-medium text-slate-300">Fasting</h2>
-          <span className="text-xs text-slate-500">goal {targetHours}h</span>
-        </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold tabular-nums text-white">
-            {hh}h {String(mm).padStart(2, '0')}m
-          </span>
-          <span className="text-sm tabular-nums text-slate-500">{String(ss).padStart(2, '0')}s</span>
-          {reached && <span className="text-sm">✅</span>}
-        </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-700">
-          <div
-            className={`h-full rounded-full ${reached ? 'bg-emerald-500' : 'bg-sky-500'}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <button
-          onClick={endFast}
-          className="mt-3 w-full rounded-lg bg-slate-700 py-2 text-sm font-semibold text-white hover:bg-slate-600"
-        >
-          End fast
-        </button>
-      </section>
-    )
-  }
-
-  return (
-    <section className="rounded-2xl bg-slate-800/60 p-4">
-      <div className="mb-2 flex items-baseline justify-between">
-        <h2 className="text-sm font-medium text-slate-300">Fasting</h2>
-        <span className="text-xs text-slate-500">not fasting</span>
-      </div>
-      <div className="mb-3 inline-flex rounded-lg bg-slate-900 p-1 ring-1 ring-slate-700">
-        {FAST_TARGETS.map((h) => (
-          <button
-            key={h}
-            onClick={() => saveTarget(h)}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-              targetHours === h ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            {h}h
-          </button>
-        ))}
-      </div>
-      <button
-        onClick={startFast}
-        className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
-      >
-        Start fast
-      </button>
     </section>
   )
 }
