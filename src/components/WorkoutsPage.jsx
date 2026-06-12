@@ -1,11 +1,40 @@
-import { useEffect, useMemo, useState } from 'react'
-import { todayISO, prettyDate } from '../lib/dates.js'
-import { epley1RM } from '../lib/strength.js'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { todayISO, prettyDate, daysBetween } from '../lib/dates.js'
+import { epley1RM, caffeineIntakeTime, deloadReadiness } from '../lib/strength.js'
 import { useWorkouts } from '../hooks/useWorkouts.js'
+import { useTargets } from '../hooks/useTargets.js'
 import { useToast } from './Toast.jsx'
-import { PageHeader, Card, Button, EmptyState, inputCls } from './ui.jsx'
+import { PageHeader, Card, Button, Segmented, EmptyState, inputCls } from './ui.jsx'
 
 const WINDOW_MS = 2.5 * 60 * 60 * 1000 // 2.5h anabolic window
+
+// Curated exercise suggestions per mode (convenience datalist only — free text
+// is always allowed). Gym favours loaded barbell/machine work; home favours
+// bodyweight/dumbbell movements.
+const EXERCISE_SUGGESTIONS = {
+  gym: [
+    'Bench Press', 'Squat', 'Deadlift', 'Overhead Press', 'Barbell Row',
+    'Lat Pulldown', 'Leg Press', 'Cable Row', 'Incline Bench Press',
+    'Romanian Deadlift', 'Pull-up', 'Dumbbell Curl', 'Tricep Pushdown',
+  ],
+  home: [
+    'Push-up', 'Bodyweight Squat', 'Lunge', 'Plank', 'Pull-up', 'Dip',
+    'Pike Push-up', 'Dumbbell Curl', 'Dumbbell Press', 'Dumbbell Row',
+    'Glute Bridge', 'Mountain Climber', 'Burpee',
+  ],
+}
+
+// Bodyweight starter sets for the one-tap micro-workout (streak saver).
+const MICRO_WORKOUT = [
+  { exercise: 'Push-up', reps: 15 },
+  { exercise: 'Bodyweight Squat', reps: 20 },
+  { exercise: 'Plank', reps: 1, note: '~45s hold' },
+]
+
+function fmtClock(date) {
+  if (!date) return ''
+  return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+}
 
 export default function WorkoutsPage() {
   const {
@@ -19,6 +48,7 @@ export default function WorkoutsPage() {
     removeWorkout,
     restoreWorkout,
   } = useWorkouts()
+  const { settings, saveSettings } = useTargets()
   const toast = useToast()
 
   const [creating, setCreating] = useState(false)
@@ -26,6 +56,23 @@ export default function WorkoutsPage() {
   const [notes, setNotes] = useState('')
   // Timer: { startedAt } once a session is created/saved this visit.
   const [timer, setTimer] = useState(null)
+
+  const gymMode = settings.gym_mode || 'gym'
+  const suggestions = EXERCISE_SUGGESTIONS[gymMode] || EXERCISE_SUGGESTIONS.gym
+
+  // Last note seen per exercise, from earlier sessions — powers "Last time: …".
+  const lastNotes = useMemo(() => {
+    const map = {}
+    // workouts are newest-first; first note we meet per exercise is the latest.
+    for (const w of workouts) {
+      for (const s of w.sets) {
+        if (s.note && s.note.trim() && !(s.exercise in map)) {
+          map[s.exercise] = s.note.trim()
+        }
+      }
+    }
+    return map
+  }, [workouts])
 
   async function startSession(e) {
     e.preventDefault()
@@ -36,9 +83,36 @@ export default function WorkoutsPage() {
     setTimer({ startedAt: Date.now() })
   }
 
+  async function logQuickSession() {
+    const w = await createWorkout(todayISO(), 'Quick session')
+    if (!w?.id) return
+    let i = 1
+    for (const m of MICRO_WORKOUT) {
+      await addSet(w.id, {
+        exercise: m.exercise,
+        set_index: i++,
+        weight_kg: null,
+        reps: m.reps,
+        rpe: null,
+        setup: null,
+        note: m.note || null,
+      })
+    }
+    setTimer({ startedAt: Date.now() })
+    toast({ message: 'Quick session logged — nice one!' })
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <PageHeader title="Workouts" subtitle="Log strength sessions and track your maxes">
+        <Segmented
+          value={gymMode}
+          onChange={(v) => saveSettings({ gym_mode: v })}
+          options={[
+            { value: 'home', label: 'Home' },
+            { value: 'gym', label: 'Gym' },
+          ]}
+        />
         {!creating && (
           <Button variant="primary" onClick={() => setCreating(true)}>
             ＋ New workout
@@ -47,6 +121,13 @@ export default function WorkoutsPage() {
       </PageHeader>
 
       {timer && <AnabolicTimer startedAt={timer.startedAt} onDismiss={() => setTimer(null)} />}
+
+      <StreakSaver workouts={workouts} loading={loading} onLogQuick={logQuickSession} />
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <ReadinessCard workouts={workouts} />
+        <CaffClock />
+      </div>
 
       {creating && (
         <Card title="New workout" bodyClass="space-y-2">
@@ -91,6 +172,8 @@ export default function WorkoutsPage() {
             workout={w}
             addSet={addSet}
             updateSet={updateSet}
+            suggestions={suggestions}
+            lastNotes={lastNotes}
             onRemoveSet={async (s) => {
               await removeSet(s.id)
               toast({
@@ -216,7 +299,7 @@ function PersonalRecords({ workouts }) {
 }
 
 // ── A single logged workout ──────────────────────────────────────────────────
-function WorkoutCard({ workout, addSet, updateSet, onRemoveSet, onRemoveWorkout }) {
+function WorkoutCard({ workout, addSet, updateSet, onRemoveSet, onRemoveWorkout, suggestions = [], lastNotes = {} }) {
   const [adding, setAdding] = useState(false)
 
   // Group sets by exercise, preserving first-seen order.
@@ -256,7 +339,14 @@ function WorkoutCard({ workout, addSet, updateSet, onRemoveSet, onRemoveWorkout 
             <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">{exercise}</h3>
             <ul className="mt-1 space-y-1">
               {sets.map((s) => (
-                <SetRow key={s.id} set={s} updateSet={updateSet} onRemove={() => onRemoveSet(s)} />
+                <SetRow
+                  key={s.id}
+                  set={s}
+                  updateSet={updateSet}
+                  onRemove={() => onRemoveSet(s)}
+                  suggestions={suggestions}
+                  lastNotes={lastNotes}
+                />
               ))}
             </ul>
           </div>
@@ -267,6 +357,8 @@ function WorkoutCard({ workout, addSet, updateSet, onRemoveSet, onRemoveWorkout 
         <AddSetForm
           defaultExercise={groups.length ? groups[groups.length - 1][0] : ''}
           nextIndex={nextIndex}
+          suggestions={suggestions}
+          lastNotes={lastNotes}
           onCancel={() => setAdding(false)}
           onSubmit={async (fields) => {
             await addSet(workout.id, fields)
@@ -282,7 +374,7 @@ function WorkoutCard({ workout, addSet, updateSet, onRemoveSet, onRemoveWorkout 
   )
 }
 
-function SetRow({ set, updateSet, onRemove }) {
+function SetRow({ set, updateSet, onRemove, suggestions = [], lastNotes = {} }) {
   const [editing, setEditing] = useState(false)
   const e1 = epley1RM(set.weight_kg, set.reps)
 
@@ -293,6 +385,8 @@ function SetRow({ set, updateSet, onRemove }) {
           defaultExercise={set.exercise}
           nextIndex={set.set_index}
           initial={set}
+          suggestions={suggestions}
+          lastNotes={lastNotes}
           submitLabel="Save"
           onCancel={() => setEditing(false)}
           onSubmit={async (fields) => {
@@ -343,13 +437,26 @@ function SetRow({ set, updateSet, onRemove }) {
   )
 }
 
-function AddSetForm({ defaultExercise, nextIndex, initial, submitLabel = 'Add', onSubmit, onCancel }) {
+function AddSetForm({
+  defaultExercise,
+  nextIndex,
+  initial,
+  suggestions = [],
+  lastNotes = {},
+  submitLabel = 'Add',
+  onSubmit,
+  onCancel,
+}) {
   const [exercise, setExercise] = useState(initial?.exercise ?? defaultExercise ?? '')
   const [weight, setWeight] = useState(initial?.weight_kg ?? '')
   const [reps, setReps] = useState(initial?.reps ?? '')
   const [rpe, setRpe] = useState(initial?.rpe ?? '')
   const [setup, setSetup] = useState(initial?.setup ?? '')
   const [note, setNote] = useState(initial?.note ?? '')
+  const listId = useId()
+
+  // Last note logged for this exercise in an earlier session — a resurfaced cue.
+  const lastNote = lastNotes[exercise.trim()]
 
   function submit(e) {
     e.preventDefault()
@@ -372,8 +479,14 @@ function AddSetForm({ defaultExercise, nextIndex, initial, submitLabel = 'Add', 
         value={exercise}
         onChange={(e) => setExercise(e.target.value)}
         placeholder="Exercise"
+        list={listId}
         className={`${inputCls} w-full px-3 py-2`}
       />
+      <datalist id={listId}>
+        {suggestions.map((s) => (
+          <option key={s} value={s} />
+        ))}
+      </datalist>
       <div className="flex flex-wrap gap-2">
         <input
           type="number"
@@ -410,14 +523,13 @@ function AddSetForm({ defaultExercise, nextIndex, initial, submitLabel = 'Add', 
           placeholder="Setup / variant (optional)"
           className={`${inputCls} min-w-0 flex-1 px-3 py-2`}
         />
-        <input
-          type="text"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Note (optional)"
-          className={`${inputCls} min-w-0 flex-1 px-3 py-2`}
-        />
+        <NoteInput value={note} onChange={setNote} />
       </div>
+      {lastNote && (
+        <p className="text-xs text-slate-500">
+          <span className="text-slate-400">Last time:</span> {lastNote}
+        </p>
+      )}
       <div className="flex gap-2">
         <Button type="submit" variant="success" size="sm">
           {submitLabel}
@@ -434,4 +546,174 @@ function fmtNum(n) {
   if (n == null) return ''
   const v = Number(n)
   return Number.isInteger(v) ? String(v) : String(v)
+}
+
+// ── Note input with Web Speech dictation ─────────────────────────────────────
+// The mic only appears when the browser exposes the Web Speech API. Dictated
+// text is appended to whatever is already typed.
+function NoteInput({ value, onChange }) {
+  const [listening, setListening] = useState(false)
+  const recRef = useRef(null)
+  const supported =
+    typeof window !== 'undefined' &&
+    (window.SpeechRecognition || window.webkitSpeechRecognition)
+
+  function toggle() {
+    if (!supported) return
+    if (listening) {
+      recRef.current?.stop()
+      return
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    const rec = new SR()
+    rec.lang = navigator.language || 'en-US'
+    rec.interimResults = false
+    rec.maxAlternatives = 1
+    rec.onresult = (e) => {
+      const text = e.results?.[0]?.[0]?.transcript?.trim()
+      if (text) onChange(value ? `${value} ${text}` : text)
+    }
+    rec.onend = () => setListening(false)
+    rec.onerror = () => setListening(false)
+    recRef.current = rec
+    setListening(true)
+    rec.start()
+  }
+
+  useEffect(() => () => recRef.current?.abort?.(), [])
+
+  return (
+    <div className="relative min-w-0 flex-1">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Note (optional)"
+        className={`${inputCls} w-full px-3 py-2 ${supported ? 'pr-9' : ''}`}
+      />
+      {supported && (
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={listening ? 'Stop dictation' : 'Dictate note'}
+          aria-pressed={listening}
+          className={`absolute inset-y-0 right-1.5 my-auto flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+            listening
+              ? 'bg-rose-500/20 text-rose-300 ring-1 ring-rose-500/40'
+              : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+          }`}
+        >
+          {listening ? '◉' : '🎤'}
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── Caffeine pre-workout timer ("Caff-Clock") ────────────────────────────────
+function CaffClock() {
+  const [mins, setMins] = useState('60')
+  const n = Number(mins)
+  const valid = mins !== '' && n >= 0 && Number.isFinite(n)
+  const setTime = valid ? new Date(Date.now() + n * 60 * 1000) : null
+  const takeAt = caffeineIntakeTime(setTime)
+  // If the ideal intake time is already in the past, advise taking it now.
+  const past = takeAt && takeAt.getTime() <= Date.now()
+
+  return (
+    <Card title="Caff-Clock" subtitle="Time your pre-workout caffeine" bodyClass="space-y-2">
+      <label className="flex items-center gap-2 text-sm text-slate-300">
+        Training in
+        <input
+          type="number"
+          inputMode="numeric"
+          min="0"
+          value={mins}
+          onChange={(e) => setMins(e.target.value)}
+          className={`${inputCls} w-20 px-2 py-1.5`}
+        />
+        min
+      </label>
+      {valid ? (
+        <div className="rounded-lg bg-slate-900/50 px-3 py-2 ring-1 ring-white/5">
+          <div className="text-xs text-slate-500">Take caffeine at</div>
+          <div className="text-lg font-semibold tabular-nums text-brand-300">
+            {past ? 'Now' : fmtClock(takeAt)}
+          </div>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Caffeine peaks ~45–60 min after intake, aligning with your set time.
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-slate-500">Enter when you'll start training.</p>
+      )}
+    </Card>
+  )
+}
+
+// ── Workout streak saver ─────────────────────────────────────────────────────
+function StreakSaver({ workouts, loading, onLogQuick }) {
+  const info = useMemo(() => {
+    const today = todayISO()
+    // Unique session dates, newest first.
+    const dates = [...new Set(workouts.map((w) => w.performed_on))].sort((a, b) =>
+      b.localeCompare(a),
+    )
+    if (dates.length === 0) return { loggedToday: false, last: null, gapDays: null }
+    const last = dates[0]
+    return { loggedToday: last === today, last, gapDays: daysBetween(last, today) }
+  }, [workouts])
+
+  if (loading || info.loggedToday || info.last == null) return null
+
+  const restMsg =
+    info.gapDays >= 2
+      ? `It's been ${info.gapDays} days since your last session.`
+      : 'No session logged yet today.'
+
+  return (
+    <div className="rounded-2xl bg-amber-500/10 p-4 shadow-card ring-1 ring-amber-500/30">
+      <h2 className="text-sm font-semibold text-amber-300">Keep the habit going</h2>
+      <p className="mt-0.5 text-xs text-amber-200/80">
+        {restMsg} No pressure — even 10 minutes counts. Try: Push-ups, Squats, Plank — 10 min.
+      </p>
+      <div className="mt-3">
+        <Button variant="subtle" size="sm" onClick={onLogQuick}>
+          Log quick session
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ── Auto-deload readiness ────────────────────────────────────────────────────
+function ReadinessCard({ workouts }) {
+  const { deload, share, scored } = useMemo(
+    // workouts are newest-first; pass each session's sets to the heuristic.
+    () => deloadReadiness(workouts.map((w) => w.sets)),
+    [workouts],
+  )
+
+  if (scored === 0) return null
+
+  return (
+    <Card title="Readiness" subtitle="Recent training intensity" bodyClass="space-y-1.5">
+      {deload ? (
+        <>
+          <p className="text-sm font-medium text-amber-300">Consider a deload week</p>
+          <p className="text-xs text-slate-400">
+            {Math.round(share * 100)}% of recent scored sets were RPE ≥ 9. Drop load/volume
+            ~40–50% for a week to let recovery catch up.
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-sm font-medium text-emerald-300">Recovery looks fine</p>
+          <p className="text-xs text-slate-400">
+            Recent intensity is sustainable. Keep pushing.
+          </p>
+        </>
+      )}
+    </Card>
+  )
 }
