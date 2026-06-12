@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase.js'
 import { todayISO, prettyDate } from '../lib/dates.js'
 import { useTargets } from '../hooks/useTargets.js'
 import { useDayTotals } from '../hooks/useDayTotals.js'
+import { useWater } from '../hooks/useWater.js'
 import { computeInsights, computeStreak, weeklyBudget } from '../lib/insights.js'
 import { WeightChart, CaloriesChart, Ring } from './Charts.jsx'
 import { PageHeader, Card, Stat } from './ui.jsx'
@@ -15,11 +16,13 @@ export default function DashboardPage() {
     intakeSeries,
     statusByDate,
     goalWeightKg,
+    settings,
     loading,
     error,
     setDayStatus,
   } = useTargets()
   const { totals } = useDayTotals(today)
+  const water = useWater(today)
 
   const insights = targets
     ? computeInsights({
@@ -41,6 +44,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-5">
       <PageHeader title="Today" subtitle={prettyDate(today)}>
+        {insights && insights.loggedDays > 0 && <AdherenceLight pct={insights.adherencePct} />}
         {streak.current > 0 && (
           <span
             className="rounded-full bg-amber-500/15 px-3 py-1 text-sm font-semibold text-amber-400"
@@ -76,6 +80,12 @@ export default function DashboardPage() {
       ) : (
         <div className="space-y-5">
           <CaloriesHero totals={totals} targets={targets} />
+
+          {loggedToday && Math.round(totals.kcal) > targets.target_kcal && budget && (
+            <FreshStart budget={budget} />
+          )}
+
+          <WaterCard water={water} goal={settings?.water_goal_ml || 2500} />
 
           <section className="grid grid-cols-3 gap-3">
             <Stat label="Trend" value={`${targets.trend_kg} kg`} />
@@ -310,6 +320,85 @@ function Mini({ label, value, sub, small }) {
       </div>
       {sub && <div className="text-[11px] text-slate-500">{sub}</div>}
     </div>
+  )
+}
+
+// Personal adherence "traffic light" over the last 7 days — a gentle nudge,
+// green (≥80%) / amber (≥50%) / red, with no precise number unless hovered.
+function AdherenceLight({ pct }) {
+  if (pct == null) return null
+  const [bg, text, label] =
+    pct >= 80
+      ? ['bg-emerald-500/15', 'text-emerald-400', 'On track']
+      : pct >= 50
+        ? ['bg-amber-500/15', 'text-amber-400', 'Drifting']
+        : ['bg-rose-500/15', 'text-rose-400', 'Off track']
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${bg} ${text}`}
+      title={`${pct}% on-target days this week`}
+    >
+      <span className="h-2 w-2 rounded-full bg-current" />
+      {label}
+    </span>
+  )
+}
+
+// Non-judgmental reframe after an over-target day: no shame, just the plan.
+function FreshStart({ budget }) {
+  return (
+    <section className="rounded-2xl bg-emerald-500/10 p-4 ring-1 ring-emerald-500/20">
+      <h2 className="text-sm font-semibold text-emerald-300">One day won’t derail you</h2>
+      <p className="mt-1 text-sm text-slate-300">
+        Over today — that’s fine. Your weekly budget absorbs it: tomorrow’s adjusted target is{' '}
+        <span className="font-semibold tabular-nums text-white">
+          {Math.round(budget.todayAdjusted).toLocaleString()} kcal
+        </span>
+        . Pick back up at the next meal.
+      </p>
+    </section>
+  )
+}
+
+const WATER_CUPS = [250, 500]
+
+// One-tap hydration tracking with an undo and a slim progress bar.
+function WaterCard({ water, goal }) {
+  const pct = Math.min(100, (water.total / goal) * 100)
+  const reached = water.total >= goal
+  return (
+    <Card
+      title="Water"
+      subtitle={`${water.total.toLocaleString()} / ${goal.toLocaleString()} ml`}
+      actions={
+        <div className="flex items-center gap-1.5">
+          {WATER_CUPS.map((ml) => (
+            <button
+              key={ml}
+              onClick={() => water.add(ml)}
+              className="rounded-lg bg-slate-700 px-2.5 py-1 text-xs font-semibold text-white ring-1 ring-slate-600 transition-colors hover:bg-slate-600"
+            >
+              +{ml}
+            </button>
+          ))}
+          <button
+            onClick={water.undo}
+            disabled={!water.rows.length}
+            className="rounded-lg px-2 py-1 text-xs text-slate-400 transition-colors hover:text-slate-200 disabled:opacity-40"
+            aria-label="Undo last water"
+          >
+            ↩
+          </button>
+        </div>
+      }
+    >
+      <div className="h-2.5 overflow-hidden rounded-full bg-slate-700/70">
+        <div
+          className={`h-full rounded-full transition-all ${reached ? 'bg-emerald-500' : 'bg-sky-500'}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </Card>
   )
 }
 

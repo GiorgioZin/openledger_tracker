@@ -111,6 +111,12 @@ function seed() {
     })
   }
 
+  // A little water already logged today (one-tap hydration tracking).
+  const water_log = [
+    { id: uuid(), user_id: DEMO_USER.id, logged_on: today, ml: 750, created_at: `${today}T08:00:00.000Z` },
+    { id: uuid(), user_id: DEMO_USER.id, logged_on: today, ml: 500, created_at: `${today}T11:00:00.000Z` },
+  ]
+
   return {
     weight_log,
     food_log,
@@ -121,6 +127,7 @@ function seed() {
     meals,
     recipes,
     measurements,
+    water_log,
     favorites: [
       { id: uuid(), user_id: DEMO_USER.id, name: 'Chicken breast', kcal: 165, protein_g: 31, carb_g: 0, fat_g: 3.6, fiber_g: 0, sugar_g: 0, satfat_g: 1, sodium_mg: 74, default_grams: 200, created_at: `${today}T05:00:00.000Z` },
       { id: uuid(), user_id: DEMO_USER.id, name: 'Greek yogurt', kcal: 59, protein_g: 10, carb_g: 3.6, fat_g: 0.4, fiber_g: 0, sugar_g: 3.6, satfat_g: 0.1, sodium_mg: 36, default_grams: 200, created_at: `${today}T05:01:00.000Z` },
@@ -136,6 +143,7 @@ function seed() {
         tdee_mode: 'dynamic',
         activity_level: 'moderate',
         daily_steps: 8000,
+        water_goal_ml: 2500,
         custom_kcal: null,
         custom_protein_g: null,
         custom_carb_g: null,
