@@ -117,6 +117,89 @@ function seed() {
     { id: uuid(), user_id: DEMO_USER.id, logged_on: today, ml: 500, created_at: `${today}T11:00:00.000Z` },
   ]
 
+  // A few past strength sessions so the Workouts page is alive on load.
+  const workouts = []
+  const workout_sets = []
+  function addWorkout(daysAgo, notes, exercises) {
+    const day = addDaysISO(today, -daysAgo)
+    const w = {
+      id: uuid(),
+      user_id: DEMO_USER.id,
+      performed_on: day,
+      notes,
+      created_at: `${day}T18:00:00.000Z`,
+    }
+    workouts.push(w)
+    for (const ex of exercises) {
+      ex.sets.forEach((s, i) => {
+        workout_sets.push({
+          id: uuid(),
+          user_id: DEMO_USER.id,
+          workout_id: w.id,
+          exercise: ex.name,
+          set_index: i + 1,
+          weight_kg: s.weight_kg,
+          reps: s.reps,
+          rpe: s.rpe ?? null,
+          setup: s.setup ?? null,
+          note: s.note ?? null,
+        })
+      })
+    }
+  }
+
+  addWorkout(6, 'Push day', [
+    {
+      name: 'Bench Press',
+      sets: [
+        { weight_kg: 80, reps: 5, rpe: 8 },
+        { weight_kg: 80, reps: 5, rpe: 8.5 },
+        { weight_kg: 72.5, reps: 6, rpe: 8, setup: 'Close grip', note: 'Tricep focus' },
+      ],
+    },
+    {
+      name: 'Overhead Press',
+      sets: [
+        { weight_kg: 50, reps: 6, rpe: 8 },
+        { weight_kg: 50, reps: 5, rpe: 8.5 },
+      ],
+    },
+  ])
+
+  addWorkout(4, 'Pull day', [
+    {
+      name: 'Deadlift',
+      sets: [
+        { weight_kg: 140, reps: 3, rpe: 8 },
+        { weight_kg: 140, reps: 3, rpe: 8.5 },
+        { weight_kg: 120, reps: 5, rpe: 7.5, setup: 'Paused' },
+      ],
+    },
+    {
+      name: 'Barbell Row',
+      sets: [
+        { weight_kg: 80, reps: 8, rpe: 8 },
+        { weight_kg: 80, reps: 8, rpe: 8.5 },
+      ],
+    },
+  ])
+
+  addWorkout(2, 'Push day', [
+    {
+      name: 'Bench Press',
+      sets: [
+        { weight_kg: 82.5, reps: 5, rpe: 8 },
+        { weight_kg: 82.5, reps: 4, rpe: 9 },
+      ],
+    },
+    {
+      name: 'Overhead Press',
+      sets: [
+        { weight_kg: 52.5, reps: 5, rpe: 8.5 },
+      ],
+    },
+  ])
+
   // A couple of niggles being kept an eye on.
   const niggles = [
     { id: uuid(), user_id: DEMO_USER.id, area: 'Left shoulder', intensity: 4, note: 'Tweaked during overhead press', logged_on: addDaysISO(today, -2), created_at: `${addDaysISO(today, -2)}T09:00:00.000Z` },
@@ -127,8 +210,8 @@ function seed() {
     weight_log,
     food_log,
     foods: [],
-    workouts: [],
-    workout_sets: [],
+    workouts,
+    workout_sets,
     targets: [],
     meals,
     recipes,
