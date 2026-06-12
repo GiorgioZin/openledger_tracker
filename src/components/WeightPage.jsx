@@ -131,43 +131,62 @@ export default function WeightPage() {
           trend line that powers the adaptive engine.
         </EmptyState>
       ) : (
-        <div className="space-y-3">
-          <ul className="grid gap-1.5 sm:grid-cols-2">
-            {trended.slice(0, visibleCount).map((r) => (
-              <li
-                key={r.logged_on}
-                className="flex items-center justify-between rounded-xl bg-slate-800/50 px-4 py-2.5 ring-1 ring-white/5"
-              >
-                <span className="text-sm text-slate-400">{prettyDate(r.logged_on)}</span>
-                <span className="flex items-center gap-3">
-                  <span className="font-medium tabular-nums text-white">{r.kg} kg</span>
-                  <span className="text-xs tabular-nums text-slate-500">
-                    trend {Math.round(r.trend * 10) / 10}
-                  </span>
-                  <button
-                    onClick={() => editKg(findRow(rows, r.logged_on))}
-                    className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
-                    aria-label="Edit"
-                  >
-                    ✎
-                  </button>
-                  <button
-                    onClick={() => remove(findRow(rows, r.logged_on))}
-                    className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-rose-500/15 hover:text-rose-400"
-                    aria-label="Delete"
-                  >
-                    ✕
-                  </button>
-                </span>
-              </li>
-            ))}
-          </ul>
+        <Card title="History" subtitle={`${rows.length} weigh-ins`} bodyClass="space-y-3">
+          <table className="w-full border-separate border-spacing-0 text-sm">
+            <thead>
+              <tr className="text-[11px] uppercase tracking-wide text-slate-500">
+                <th className="px-2 pb-2 text-left font-medium">Date</th>
+                <th className="px-2 pb-2 text-right font-medium">Weight</th>
+                <th className="px-2 pb-2 text-right font-medium">Change</th>
+                <th className="hidden px-2 pb-2 text-right font-medium sm:table-cell">Trend</th>
+                <th className="w-px pb-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {trended.slice(0, visibleCount).map((r, i) => {
+                const older = trended[i + 1]
+                const delta = older ? Math.round((r.kg - older.kg) * 10) / 10 : null
+                const deltaCls =
+                  delta == null || delta === 0 ? 'text-slate-600' : delta < 0 ? 'text-emerald-400' : 'text-amber-400'
+                return (
+                  <tr key={r.logged_on} className="group border-t border-white/5">
+                    <td className="whitespace-nowrap px-2 py-2 text-slate-400">{prettyDate(r.logged_on)}</td>
+                    <td className="px-2 py-2 text-right font-medium tabular-nums text-white">{r.kg} kg</td>
+                    <td className={`px-2 py-2 text-right tabular-nums ${deltaCls}`}>
+                      {delta == null ? '—' : `${delta > 0 ? '+' : ''}${delta}`}
+                    </td>
+                    <td className="hidden px-2 py-2 text-right tabular-nums text-slate-500 sm:table-cell">
+                      {Math.round(r.trend * 10) / 10}
+                    </td>
+                    <td className="py-2 pl-1 text-right">
+                      <span className="inline-flex gap-0.5 text-slate-400 opacity-80 transition-opacity group-hover:opacity-100">
+                        <button
+                          onClick={() => editKg(findRow(rows, r.logged_on))}
+                          className="rounded-md p-1.5 transition-colors hover:bg-slate-700 hover:text-white"
+                          aria-label="Edit"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          onClick={() => remove(findRow(rows, r.logged_on))}
+                          className="rounded-md p-1.5 transition-colors hover:bg-rose-500/15 hover:text-rose-400"
+                          aria-label="Delete"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
           {trended.length > visibleCount && (
             <Button variant="subtle" className="mx-auto block" onClick={() => setVisibleCount((n) => n + 30)}>
               Show more ({trended.length - visibleCount} older)
             </Button>
           )}
-        </div>
+        </Card>
       )}
 
       <Measurements />

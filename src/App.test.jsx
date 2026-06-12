@@ -40,9 +40,9 @@ describe('App (demo mode, full render)', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Weight' })).toBeInTheDocument(),
     )
-    // Trend labels are rendered for seeded entries.
+    // A row per seeded weigh-in is rendered (each shows "<kg> kg").
     await waitFor(() =>
-      expect(screen.getAllByText(/trend/i).length).toBeGreaterThan(5),
+      expect(screen.getAllByText(/\d+(\.\d+)? kg/i).length).toBeGreaterThan(5),
     )
   })
 

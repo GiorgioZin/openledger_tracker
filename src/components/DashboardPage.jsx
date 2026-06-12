@@ -174,11 +174,40 @@ function CaloriesHero({ totals, targets }) {
       </div>
 
       <div className="mt-5 grid grid-cols-4 gap-2 border-t border-white/5 pt-4">
-        <Ring consumed={totals.kcal} max={targets.target_kcal} color="#10b981" label="kcal" center={remaining(targets.target_kcal, totals.kcal)} />
-        <Ring consumed={totals.protein_g} max={targets.protein_g} color="#f43f5e" label="Protein" center={`${remaining(targets.protein_g, totals.protein_g)}`} />
-        <Ring consumed={totals.carb_g} max={targets.carb_g} color="#f59e0b" label="Carbs" center={`${remaining(targets.carb_g, totals.carb_g)}`} />
-        <Ring consumed={totals.fat_g} max={targets.fat_g} color="#0ea5e9" label="Fat" center={`${remaining(targets.fat_g, totals.fat_g)}`} />
+        <Ring
+          consumed={totals.kcal}
+          max={targets.target_kcal}
+          color="#10b981"
+          label="kcal"
+          center={remaining(targets.target_kcal, totals.kcal)}
+          sub={`${Math.round(totals.kcal)} / ${targets.target_kcal}`}
+        />
+        <Ring
+          consumed={totals.protein_g}
+          max={targets.protein_g}
+          color="#f43f5e"
+          label="Protein"
+          center={`${remaining(targets.protein_g, totals.protein_g)}`}
+          sub={`${Math.round(totals.protein_g)} / ${targets.protein_g}g`}
+        />
+        <Ring
+          consumed={totals.carb_g}
+          max={targets.carb_g}
+          color="#f59e0b"
+          label="Carbs"
+          center={`${remaining(targets.carb_g, totals.carb_g)}`}
+          sub={`${Math.round(totals.carb_g)} / ${targets.carb_g}g`}
+        />
+        <Ring
+          consumed={totals.fat_g}
+          max={targets.fat_g}
+          color="#0ea5e9"
+          label="Fat"
+          center={`${remaining(targets.fat_g, totals.fat_g)}`}
+          sub={`${Math.round(totals.fat_g)} / ${targets.fat_g}g`}
+        />
       </div>
+      <p className="mt-2 text-center text-[11px] text-slate-500">ring centre = remaining · caption = eaten / target</p>
     </section>
   )
 }

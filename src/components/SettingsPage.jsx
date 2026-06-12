@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTargets } from '../hooks/useTargets.js'
 import { PageHeader, Card, Segmented, Button, inputCls } from './ui.jsx'
 
@@ -21,7 +22,26 @@ export default function SettingsPage() {
           <GoalConfig settings={settings} onSave={saveSettings} />
         </>
       )}
+
+      <DataExport />
     </div>
+  )
+}
+
+function DataExport() {
+  return (
+    <Link
+      to="/export"
+      className="flex items-center justify-between rounded-2xl bg-slate-800/50 p-4 text-sm text-slate-300 shadow-card ring-1 ring-white/5 transition-colors hover:bg-slate-800"
+    >
+      <span>
+        <span className="font-medium text-white">Export data</span>
+        <span className="mt-0.5 block text-xs text-slate-500">
+          Download your food, weight & workout history as Excel
+        </span>
+      </span>
+      <span className="text-slate-500">→</span>
+    </Link>
   )
 }
 

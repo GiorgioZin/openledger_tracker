@@ -47,13 +47,14 @@ const Icon = {
   ),
 }
 
+// Export lives under Settings (linked from there), so it's intentionally off
+// the primary nav to keep the bar focused on day-to-day actions.
 const tabs = [
   { to: '/', label: 'Today', icon: 'today' },
   { to: '/food', label: 'Food', icon: 'food' },
   { to: '/weight', label: 'Weight', icon: 'weight' },
   { to: '/trends', label: 'Trends', icon: 'trends' },
   { to: '/settings', label: 'Settings', icon: 'settings' },
-  { to: '/export', label: 'Export', icon: 'export' },
 ]
 
 function Brand() {
