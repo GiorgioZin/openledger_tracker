@@ -74,7 +74,9 @@ create table if not exists public.workout_sets (
   set_index   int not null,
   weight_kg   numeric,
   reps        int,
-  rpe         numeric
+  rpe         numeric,
+  setup       text,
+  note        text
 );
 
 -- Adaptive engine output, one row per day it runs.

@@ -25,6 +25,15 @@ const Icon = {
       <path d="m9 12 3-3 1.5 4.5" />
     </svg>
   ),
+  workouts: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M6.5 8.5v7" />
+      <path d="M17.5 8.5v7" />
+      <path d="M4 10v4" />
+      <path d="M20 10v4" />
+      <path d="M6.5 12h11" />
+    </svg>
+  ),
   trends: (p) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <path d="M4 19V5" />
@@ -61,6 +70,7 @@ const tabs = [
   { to: '/', label: 'Today', icon: 'today' },
   { to: '/food', label: 'Food', icon: 'food' },
   { to: '/weight', label: 'Weight', icon: 'weight' },
+  { to: '/workouts', label: 'Workouts', icon: 'workouts' },
   { to: '/trends', label: 'Trends', icon: 'trends' },
   { to: '/injuries', label: 'Injuries', icon: 'injuries' },
   { to: '/settings', label: 'Settings', icon: 'settings' },

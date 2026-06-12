@@ -8,6 +8,7 @@ import { ToastProvider } from './components/Toast.jsx'
 import DashboardPage from './components/DashboardPage.jsx'
 import FoodPage from './components/FoodPage.jsx'
 import WeightPage from './components/WeightPage.jsx'
+import WorkoutsPage from './components/WorkoutsPage.jsx'
 import TrendsPage from './components/TrendsPage.jsx'
 import InjuriesPage from './components/InjuriesPage.jsx'
 import SettingsPage from './components/SettingsPage.jsx'
@@ -38,6 +39,7 @@ export default function App() {
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/food" element={<FoodPage />} />
                 <Route path="/weight" element={<WeightPage />} />
+                <Route path="/workouts" element={<WorkoutsPage />} />
                 <Route path="/trends" element={<TrendsPage />} />
                 <Route path="/injuries" element={<InjuriesPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
