@@ -166,6 +166,17 @@ create table if not exists public.water_log (
   created_at timestamptz not null default now()
 );
 
+-- Injuries / niggles: track aches and their intensity over time.
+create table if not exists public.niggles (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  area       text not null,
+  intensity  int not null check (intensity between 1 and 10),
+  note       text,
+  logged_on  date not null default current_date,
+  created_at timestamptz not null default now()
+);
+
 -- Recipes: composite foods made of ingredients, divided into servings. Logging
 -- a serving adds (recipe total / servings) to the food log.
 create table if not exists public.recipes (
@@ -190,6 +201,7 @@ create index if not exists measurements_user_kind_idx  on public.measurements (u
 create index if not exists recipes_user_idx            on public.recipes (user_id, created_at desc);
 create index if not exists favorites_user_idx          on public.favorites (user_id, created_at desc);
 create index if not exists water_log_user_day_idx       on public.water_log (user_id, logged_on);
+create index if not exists niggles_user_idx             on public.niggles (user_id, logged_on desc);
 
 -- ---------------------------------------------------------------------------
 -- Row-level security: a user only ever sees their own rows.
@@ -207,12 +219,13 @@ alter table public.measurements enable row level security;
 alter table public.recipes      enable row level security;
 alter table public.favorites    enable row level security;
 alter table public.water_log    enable row level security;
+alter table public.niggles      enable row level security;
 
 do $$
 declare t text;
 begin
   foreach t in array array[
-    'foods','food_log','weight_log','workouts','workout_sets','targets','settings','meals','day_status','measurements','recipes','favorites','water_log'
+    'foods','food_log','weight_log','workouts','workout_sets','targets','settings','meals','day_status','measurements','recipes','favorites','water_log','niggles'
   ] loop
     execute format(
       'create policy %1$I_owner on public.%1$I

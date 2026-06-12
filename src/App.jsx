@@ -9,6 +9,7 @@ import DashboardPage from './components/DashboardPage.jsx'
 import FoodPage from './components/FoodPage.jsx'
 import WeightPage from './components/WeightPage.jsx'
 import TrendsPage from './components/TrendsPage.jsx'
+import InjuriesPage from './components/InjuriesPage.jsx'
 import SettingsPage from './components/SettingsPage.jsx'
 import ExportPage from './components/ExportPage.jsx'
 
@@ -38,6 +39,7 @@ export default function App() {
                 <Route path="/food" element={<FoodPage />} />
                 <Route path="/weight" element={<WeightPage />} />
                 <Route path="/trends" element={<TrendsPage />} />
+                <Route path="/injuries" element={<InjuriesPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/export" element={<ExportPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

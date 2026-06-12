@@ -32,6 +32,14 @@ const Icon = {
       <path d="m7 14 3.5-4 3 2.5L20 6" />
     </svg>
   ),
+  injuries: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-45 12 12)" />
+      <path d="M10 10v4" />
+      <path d="M14 10v4" />
+      <path d="M10 12h4" />
+    </svg>
+  ),
   settings: (p) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <circle cx="12" cy="12" r="3" />
@@ -54,6 +62,7 @@ const tabs = [
   { to: '/food', label: 'Food', icon: 'food' },
   { to: '/weight', label: 'Weight', icon: 'weight' },
   { to: '/trends', label: 'Trends', icon: 'trends' },
+  { to: '/injuries', label: 'Injuries', icon: 'injuries' },
   { to: '/settings', label: 'Settings', icon: 'settings' },
 ]
 
