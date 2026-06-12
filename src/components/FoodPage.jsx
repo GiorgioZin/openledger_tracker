@@ -7,6 +7,7 @@ import { useQuickAdd } from '../hooks/useQuickAdd.js'
 import { useRecipes, recipeServing } from '../hooks/useRecipes.js'
 import { useToast } from './Toast.jsx'
 import BarcodeScanner from './BarcodeScanner.jsx'
+import { PageHeader, Button, inputCls } from './ui.jsx'
 
 const MEALS = ['breakfast', 'lunch', 'dinner', 'snack']
 
@@ -73,9 +74,9 @@ export default function FoodPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
-      <h1 className="text-2xl font-bold text-white">Food</h1>
-
-      <DateNav date={date} today={today} onChange={setDate} />
+      <PageHeader title="Food" subtitle={isToday ? 'Today' : prettyDate(date)}>
+        <DateNav date={date} today={today} onChange={setDate} />
+      </PageHeader>
 
       <Totals totals={totals} />
 
@@ -125,7 +126,7 @@ export default function FoodPage() {
               <FoodSearch onPick={setSelected} />
               <button
                 onClick={() => setQuickAdd(true)}
-                className="mt-3 w-full rounded-lg border border-dashed border-slate-700 py-2.5 text-sm text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                className="mt-3 w-full rounded-lg border border-dashed border-slate-700 py-2.5 text-sm text-slate-400 transition-colors hover:border-brand-500/50 hover:text-slate-200"
               >
                 ＋ Quick add calories
               </button>
@@ -134,7 +135,7 @@ export default function FoodPage() {
         </div>
 
         <div>
-          <h2 className="mb-2 text-sm font-medium text-slate-300">
+          <h2 className="mb-2 text-sm font-semibold text-slate-200">
             Logged {isToday ? 'today' : prettyDate(date)}
           </h2>
           <LoggedList rows={rows} onChange={refreshAll} />
@@ -147,10 +148,10 @@ export default function FoodPage() {
 function DateNav({ date, today, onChange }) {
   const isToday = date === today
   return (
-    <div className="-mt-3 flex items-center gap-2">
+    <div className="flex items-center gap-2">
       <button
         onClick={() => onChange(addDaysISO(date, -1))}
-        className="rounded-lg bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700"
+        className="rounded-lg bg-slate-800 px-3 py-2 text-slate-300 ring-1 ring-slate-700 transition-colors hover:bg-slate-700"
         aria-label="Previous day"
       >
         ‹
@@ -160,12 +161,12 @@ function DateNav({ date, today, onChange }) {
         value={date}
         max={today}
         onChange={(e) => onChange(e.target.value || today)}
-        className="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        className={`${inputCls} px-3 py-2 text-sm`}
       />
       <button
         onClick={() => onChange(addDaysISO(date, 1))}
         disabled={isToday}
-        className="rounded-lg bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700 disabled:opacity-40"
+        className="rounded-lg bg-slate-800 px-3 py-2 text-slate-300 ring-1 ring-slate-700 transition-colors hover:bg-slate-700 disabled:opacity-40"
         aria-label="Next day"
       >
         ›
@@ -173,7 +174,7 @@ function DateNav({ date, today, onChange }) {
       {!isToday && (
         <button
           onClick={() => onChange(today)}
-          className="ml-1 rounded-lg px-2 py-2 text-xs font-medium text-sky-400 hover:text-sky-300"
+          className="ml-1 rounded-lg px-2 py-2 text-xs font-medium text-brand-400 hover:text-brand-300"
         >
           Today
         </button>
@@ -184,7 +185,7 @@ function DateNav({ date, today, onChange }) {
 
 function FoodChip({ food, onPick, starred, onToggleStar }) {
   return (
-    <span className="inline-flex items-center rounded-full bg-slate-900 ring-1 ring-slate-700 hover:ring-sky-500">
+    <span className="inline-flex items-center rounded-full bg-slate-900 ring-1 ring-slate-700 hover:ring-brand-500">
       <button
         onClick={() => onPick(food)}
         className="py-1.5 pl-3 pr-1 text-sm text-slate-200"
@@ -209,7 +210,7 @@ function QuickAdd({ recents, meals, favorites, canSaveToday, onPickRecent, onLog
   const toggle = (food) =>
     favNames.has(food.name.toLowerCase()) ? onRemoveFav(food.name) : onAddFav(food)
   return (
-    <div className="space-y-3 rounded-2xl bg-slate-800/60 p-4">
+    <div className="space-y-3 rounded-2xl bg-slate-800/50 p-4 shadow-card ring-1 ring-white/5">
       {favorites.length > 0 && (
         <div>
           <h2 className="mb-2 text-sm font-medium text-slate-300">Favorites</h2>
@@ -240,11 +241,11 @@ function QuickAdd({ recents, meals, favorites, canSaveToday, onPickRecent, onLog
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-slate-300">Saved meals</h2>
+          <h2 className="text-sm font-semibold text-slate-200">Saved meals</h2>
           <button
             onClick={onSaveToday}
             disabled={!canSaveToday}
-            className="text-xs font-medium text-sky-400 disabled:text-slate-600"
+            className="text-xs font-medium text-brand-400 disabled:text-slate-600"
           >
             ＋ Save today
           </button>
@@ -258,7 +259,7 @@ function QuickAdd({ recents, meals, favorites, canSaveToday, onPickRecent, onLog
             {meals.map((m) => (
               <li
                 key={m.id}
-                className="flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2"
+                className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2 ring-1 ring-white/5"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm text-white">{m.name}</span>
@@ -297,12 +298,12 @@ function sumKcal(items) {
 function RecipesPanel({ recipes, onLog, onDelete, onCreate }) {
   const [building, setBuilding] = useState(false)
   return (
-    <div className="space-y-3 rounded-2xl bg-slate-800/60 p-4">
+    <div className="space-y-3 rounded-2xl bg-slate-800/50 p-4 shadow-card ring-1 ring-white/5">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-slate-300">Recipes</h2>
+        <h2 className="text-sm font-semibold text-slate-200">Recipes</h2>
         <button
           onClick={() => setBuilding((v) => !v)}
-          className="text-xs font-medium text-sky-400 hover:text-sky-300"
+          className="text-xs font-medium text-brand-400 hover:text-brand-300"
         >
           {building ? 'Cancel' : '＋ New recipe'}
         </button>
@@ -339,7 +340,7 @@ function RecipeRow({ recipe, onLog, onDelete }) {
   const [count, setCount] = useState(1)
   const per = recipeServing(recipe, 1)
   return (
-    <li className="flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2">
+    <li className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2 ring-1 ring-white/5">
       <span className="min-w-0">
         <span className="block truncate text-sm text-white">{recipe.name}</span>
         <span className="block text-xs text-slate-500">
@@ -353,7 +354,7 @@ function RecipeRow({ recipe, onLog, onDelete }) {
           step="0.5"
           value={count}
           onChange={(e) => setCount(parseFloat(e.target.value) || 1)}
-          className="w-14 rounded-lg bg-slate-900 px-2 py-1.5 text-center text-sm text-white ring-1 ring-slate-700 focus:ring-sky-500"
+          className="w-14 rounded-lg bg-slate-900 px-2 py-1.5 text-center text-sm text-white ring-1 ring-slate-700 focus:ring-brand-500"
           aria-label="Servings to log"
         />
         <button
@@ -411,7 +412,7 @@ function RecipeBuilder({ onCancel, onSave }) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Recipe name"
-        className="w-full rounded-lg bg-slate-900 px-3 py-2 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        className="w-full rounded-lg bg-slate-900 px-3 py-2 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-brand-500"
       />
       <label className="flex items-center gap-2 text-sm text-slate-400">
         Servings
@@ -421,7 +422,7 @@ function RecipeBuilder({ onCancel, onSave }) {
           step="1"
           value={servings}
           onChange={(e) => setServings(parseInt(e.target.value, 10) || 1)}
-          className="w-20 rounded-lg bg-slate-900 px-3 py-2 text-white ring-1 ring-slate-700 focus:ring-sky-500"
+          className="w-20 rounded-lg bg-slate-900 px-3 py-2 text-white ring-1 ring-slate-700 focus:ring-brand-500"
         />
       </label>
 
@@ -452,11 +453,11 @@ function RecipeBuilder({ onCancel, onSave }) {
             inputMode="decimal"
             value={grams}
             onChange={(e) => setGrams(e.target.value)}
-            className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-sky-500"
+            className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-brand-500"
             aria-label="Grams"
           />
           <span className="text-xs text-slate-500">g</span>
-          <button onClick={addIngredient} className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white">
+          <button onClick={addIngredient} className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white">
             Add
           </button>
           <button
@@ -497,7 +498,7 @@ function RecipeBuilder({ onCancel, onSave }) {
 
 function Totals({ totals }) {
   return (
-    <div className="space-y-2 rounded-2xl bg-slate-800/60 p-3">
+    <div className="space-y-2 rounded-2xl bg-slate-800/50 p-3 shadow-card ring-1 ring-white/5">
       <div className="grid grid-cols-4 gap-2 text-center">
         {[
           ['kcal', Math.round(totals.kcal)],
@@ -598,24 +599,20 @@ function FoodSearch({ onPick }) {
           onChange={(e) => setQ(e.target.value)}
           inputMode="search"
           placeholder="Search or paste a barcode"
-          className="min-w-0 flex-1 rounded-lg bg-slate-800 px-4 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className={`${inputCls} min-w-0 flex-1 px-4 py-3`}
         />
         <button
           type="button"
           onClick={() => setScanning(true)}
-          className="rounded-lg bg-slate-700 px-3 font-semibold text-white"
+          className="rounded-lg bg-slate-700 px-3 font-semibold text-white ring-1 ring-slate-600 transition-colors hover:bg-slate-600"
           title="Scan a barcode"
           aria-label="Scan a barcode"
         >
           📷
         </button>
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-sky-600 px-4 font-semibold text-white disabled:opacity-50"
-        >
+        <Button type="submit" disabled={busy} size="lg" className="px-4">
           {busy ? '…' : 'Go'}
-        </button>
+        </Button>
       </form>
 
       {busy && <p className="mt-2 text-xs text-slate-500">Searching…</p>}
@@ -626,7 +623,7 @@ function FoodSearch({ onPick }) {
           <li key={f.barcode || i}>
             <button
               onClick={() => onPick(f)}
-              className="flex w-full items-center justify-between rounded-lg bg-slate-800/60 px-4 py-3 text-left"
+              className="flex w-full items-center justify-between rounded-lg bg-slate-800/50 px-4 py-3 text-left ring-1 ring-white/5 transition-colors hover:bg-slate-800 hover:ring-brand-500/40"
             >
               <span>
                 <span className="block text-white">{f.name}</span>
@@ -636,7 +633,7 @@ function FoodSearch({ onPick }) {
                   {Math.round(f.carb_g)} F{Math.round(f.fat_g)}
                 </span>
               </span>
-              <span className="text-sky-400">＋</span>
+              <span className="text-lg text-brand-400">＋</span>
             </button>
           </li>
         ))}
@@ -705,7 +702,7 @@ function LogForm({ food, dateISO, onCancel, onLogged }) {
   }
 
   return (
-    <div className="rounded-2xl bg-slate-800/60 p-4">
+    <div className="rounded-2xl bg-slate-800/50 p-4 shadow-card ring-1 ring-white/5">
       <div className="font-semibold text-white">{food.name}</div>
       {food.brand && <div className="text-xs text-slate-400">{food.brand}</div>}
 
@@ -715,7 +712,7 @@ function LogForm({ food, dateISO, onCancel, onLogged }) {
         inputMode="decimal"
         value={grams}
         onChange={(e) => setGrams(e.target.value)}
-        className="mt-1 w-full rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        className="mt-1 w-full rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
       />
       <div className="mt-2 flex flex-wrap gap-1.5">
         {[50, 100, 150, 200, 250].map((g) => (
@@ -725,7 +722,7 @@ function LogForm({ food, dateISO, onCancel, onLogged }) {
             onClick={() => setGrams(g)}
             className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
               Number(grams) === g
-                ? 'bg-sky-600 text-white ring-sky-600'
+                ? 'bg-brand-600 text-white ring-brand-600'
                 : 'bg-slate-900 text-slate-300 ring-slate-700 hover:ring-slate-600'
             }`}
           >
@@ -742,7 +739,7 @@ function LogForm({ food, dateISO, onCancel, onLogged }) {
             type="button"
             onClick={() => setMeal(m)}
             className={`rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
-              meal === m ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              meal === m ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             {m}
@@ -801,7 +798,11 @@ function LoggedList({ rows, onChange }) {
     })
   }
   if (!rows.length) {
-    return <p className="text-sm text-slate-500">Nothing logged yet today.</p>
+    return (
+      <div className="rounded-2xl bg-slate-800/40 px-4 py-8 text-center text-sm text-slate-500 ring-1 ring-white/5">
+        Nothing logged yet. Search a food or quick-add calories to get started.
+      </div>
+    )
   }
 
   // Group by meal, preserving a natural meal order.
@@ -875,7 +876,7 @@ function LoggedItem({ row, onChange, onRemove }) {
 
   if (editing) {
     return (
-      <li className="space-y-2 rounded-lg bg-slate-800/60 px-4 py-3">
+      <li className="space-y-2 rounded-lg bg-slate-800/50 px-4 py-3 ring-1 ring-white/5">
         <div className="flex items-center justify-between">
           <span className="text-sm text-white">{row.name}</span>
           <span className="flex items-center gap-2">
@@ -886,7 +887,7 @@ function LoggedItem({ row, onChange, onRemove }) {
                   inputMode="decimal"
                   value={grams}
                   onChange={(e) => setGrams(e.target.value)}
-                  className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-sky-500"
+                  className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-brand-500"
                   aria-label="Grams"
                 />
                 <span className="text-xs text-slate-500">g</span>
@@ -898,7 +899,7 @@ function LoggedItem({ row, onChange, onRemove }) {
                   inputMode="decimal"
                   value={kcal}
                   onChange={(e) => setKcal(e.target.value)}
-                  className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-sky-500"
+                  className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-brand-500"
                   aria-label="Calories"
                 />
                 <span className="text-xs text-slate-500">kcal</span>
@@ -912,7 +913,7 @@ function LoggedItem({ row, onChange, onRemove }) {
               key={m}
               onClick={() => setMeal(m)}
               className={`rounded-md px-2 py-1 text-xs font-medium capitalize ${
-                meal === m ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                meal === m ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               {m}
@@ -939,7 +940,7 @@ function LoggedItem({ row, onChange, onRemove }) {
   }
 
   return (
-    <li className="flex items-center justify-between rounded-lg bg-slate-800/60 px-4 py-3">
+    <li className="flex items-center justify-between rounded-lg bg-slate-800/50 px-4 py-3 ring-1 ring-white/5">
       <span>
         <span className="block text-white">{row.name}</span>
         <span className="block text-xs text-slate-400">
@@ -1010,7 +1011,7 @@ function QuickAddForm({ dateISO, onCancel, onLogged }) {
   }
 
   return (
-    <div className="rounded-2xl bg-slate-800/60 p-4">
+    <div className="rounded-2xl bg-slate-800/50 p-4 shadow-card ring-1 ring-white/5">
       <div className="font-semibold text-white">Quick add</div>
       <p className="text-xs text-slate-400">Log calories (and macros, optional) without searching.</p>
 
@@ -1018,7 +1019,7 @@ function QuickAddForm({ dateISO, onCancel, onLogged }) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Name (optional)"
-        className="mt-3 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        className="mt-3 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-brand-500"
       />
       <div className="mt-2 grid grid-cols-4 gap-2">
         <Field label="kcal" value={kcal} onChange={setKcal} />
@@ -1034,7 +1035,7 @@ function QuickAddForm({ dateISO, onCancel, onLogged }) {
             type="button"
             onClick={() => setMeal(m)}
             className={`rounded-md px-2.5 py-1 text-xs font-medium capitalize ${
-              meal === m ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              meal === m ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             {m}
@@ -1069,7 +1070,7 @@ function Field({ label, value, onChange }) {
         inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-lg bg-slate-900 px-2 py-2 text-center text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        className="mt-1 w-full rounded-lg bg-slate-900 px-2 py-2 text-center text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
       />
     </label>
   )

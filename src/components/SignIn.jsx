@@ -44,7 +44,7 @@ export default function SignIn() {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg bg-slate-800 px-4 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className="w-full rounded-lg bg-slate-800 px-4 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-brand-500"
         />
         <input
           type="password"
@@ -53,12 +53,12 @@ export default function SignIn() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg bg-slate-800 px-4 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className="w-full rounded-lg bg-slate-800 px-4 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-brand-500"
         />
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-lg bg-sky-600 py-3 font-semibold text-white disabled:opacity-50"
+          className="w-full rounded-lg bg-brand-600 py-3 font-semibold text-white disabled:opacity-50"
         >
           {busy ? '…' : mode === 'signup' ? 'Create account' : 'Sign in'}
         </button>

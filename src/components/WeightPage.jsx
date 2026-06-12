@@ -5,6 +5,7 @@ import { ewmaTrend } from '../lib/engine.js'
 import { WeightChart } from './Charts.jsx'
 import { useMeasurements } from '../hooks/useMeasurements.js'
 import { useToast } from './Toast.jsx'
+import { PageHeader, Card, Button, EmptyState, inputCls } from './ui.jsx'
 
 export default function WeightPage() {
   const toast = useToast()
@@ -82,13 +83,17 @@ export default function WeightPage() {
   const ascending = [...rows].sort((a, b) => a.logged_on.localeCompare(b.logged_on))
   const ascTrend = ewmaTrend(ascending)
   const trended = [...ascTrend].reverse()
+  const latest = trended[0]
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <h1 className="text-2xl font-bold text-white">Weight</h1>
+      <PageHeader
+        title="Weight"
+        subtitle={latest ? `Trend ${Math.round(latest.trend * 10) / 10} kg` : 'Log a weigh-in to begin'}
+      />
 
-      <form onSubmit={save} className="rounded-2xl bg-slate-800/60 p-4">
-        <div className="flex flex-wrap gap-2">
+      <Card bodyClass="space-y-2">
+        <form onSubmit={save} className="flex flex-wrap gap-2">
           <input
             type="number"
             step="0.1"
@@ -96,48 +101,46 @@ export default function WeightPage() {
             value={kg}
             onChange={(e) => setKg(e.target.value)}
             placeholder="kg"
-            className="w-20 rounded-lg bg-slate-900 px-3 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+            className={`${inputCls} w-20 px-3 py-3`}
           />
           <input
             type="date"
             value={date}
             max={todayISO()}
             onChange={(e) => setDate(e.target.value)}
-            className="min-w-0 flex-1 rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+            className={`${inputCls} min-w-0 flex-1 px-4 py-3`}
           />
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white disabled:opacity-50"
-          >
+          <Button type="submit" variant="success" size="lg" disabled={busy}>
             {busy ? '…' : 'Save'}
-          </button>
-        </div>
-        {err && <p className="mt-2 text-sm text-red-400">{err}</p>}
-      </form>
+          </Button>
+        </form>
+        {err && <p className="text-sm text-red-400">{err}</p>}
+      </Card>
 
       {!loading && rows.length >= 2 && (
-        <section className="rounded-2xl bg-slate-800/60 p-4">
-          <h2 className="mb-2 text-sm font-medium text-slate-300">Trend</h2>
+        <Card title="Trend" subtitle={latest ? `${latest.trend.toFixed(1)} kg` : ''}>
           <WeightChart series={ascTrend} height={200} />
-        </section>
+        </Card>
       )}
 
       {loading ? (
         <p className="text-slate-400">Loading…</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-slate-500">No weigh-ins yet.</p>
+        <EmptyState icon="⚖" title="No weigh-ins yet">
+          Add your weight above. After a couple of entries you’ll see a smoothed
+          trend line that powers the adaptive engine.
+        </EmptyState>
       ) : (
-        <>
-          <ul className="grid gap-1 sm:grid-cols-2">
+        <div className="space-y-3">
+          <ul className="grid gap-1.5 sm:grid-cols-2">
             {trended.slice(0, visibleCount).map((r) => (
               <li
                 key={r.logged_on}
-                className="flex items-center justify-between rounded-lg bg-slate-800/60 px-4 py-2.5"
+                className="flex items-center justify-between rounded-xl bg-slate-800/50 px-4 py-2.5 ring-1 ring-white/5"
               >
                 <span className="text-sm text-slate-400">{prettyDate(r.logged_on)}</span>
                 <span className="flex items-center gap-3">
-                  <span className="tabular-nums text-white">{r.kg} kg</span>
+                  <span className="font-medium tabular-nums text-white">{r.kg} kg</span>
                   <span className="text-xs tabular-nums text-slate-500">
                     trend {Math.round(r.trend * 10) / 10}
                   </span>
@@ -160,14 +163,11 @@ export default function WeightPage() {
             ))}
           </ul>
           {trended.length > visibleCount && (
-            <button
-              onClick={() => setVisibleCount((n) => n + 30)}
-              className="mx-auto block rounded-lg bg-slate-800 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700"
-            >
+            <Button variant="subtle" className="mx-auto block" onClick={() => setVisibleCount((n) => n + 30)}>
               Show more ({trended.length - visibleCount} older)
-            </button>
+            </Button>
           )}
-        </>
+        </div>
       )}
 
       <Measurements />
@@ -182,7 +182,7 @@ function findRow(rows, iso) {
 const PRESET_KINDS = ['waist', 'chest', 'hips', 'arm', 'thigh', 'neck']
 
 function Measurements() {
-  const { byKind, add, remove, restore, loading } = useMeasurements()
+  const { byKind, add, remove, restore } = useMeasurements()
   const toast = useToast()
   const available = [...new Set([...PRESET_KINDS, ...Object.keys(byKind)])]
   const [kind, setKind] = useState('waist')
@@ -206,13 +206,14 @@ function Measurements() {
   }
 
   return (
-    <section className="space-y-4 rounded-2xl bg-slate-800/60 p-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-200">Measurements</h2>
+    <Card
+      title="Measurements"
+      bodyClass="space-y-4"
+      actions={
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value)}
-          className="rounded-lg bg-slate-900 px-2 py-1.5 text-sm capitalize text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className={`${inputCls} px-2 py-1.5 text-sm capitalize`}
         >
           {available.map((k) => (
             <option key={k} value={k} className="capitalize">
@@ -220,8 +221,8 @@ function Measurements() {
             </option>
           ))}
         </select>
-      </div>
-
+      }
+    >
       <form onSubmit={save} className="flex flex-wrap gap-2">
         <input
           type="number"
@@ -230,40 +231,36 @@ function Measurements() {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="cm"
-          className="w-24 rounded-lg bg-slate-900 px-3 py-2 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className={`${inputCls} w-24`}
         />
         <input
           type="date"
           value={date}
           max={todayISO()}
           onChange={(e) => setDate(e.target.value)}
-          className="min-w-0 flex-1 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className={`${inputCls} min-w-0 flex-1`}
         />
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white disabled:opacity-50"
-        >
+        <Button type="submit" variant="success" disabled={busy}>
           {busy ? '…' : 'Save'}
-        </button>
+        </Button>
       </form>
 
-      {loading ? null : entries.length >= 2 ? (
+      {entries.length >= 2 ? (
         <WeightChart series={chartSeries} height={160} />
       ) : entries.length === 0 ? (
-        <p className="text-sm text-slate-500 capitalize">No {kind} measurements yet.</p>
+        <p className="text-sm capitalize text-slate-500">No {kind} measurements yet.</p>
       ) : null}
 
       {recent.length > 0 && (
-        <ul className="grid gap-1 sm:grid-cols-2">
+        <ul className="grid gap-1.5 sm:grid-cols-2">
           {recent.map((m) => (
             <li
               key={m.id}
-              className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2"
+              className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-2 ring-1 ring-white/5"
             >
               <span className="text-sm text-slate-400">{prettyDate(m.logged_on)}</span>
               <span className="flex items-center gap-3">
-                <span className="tabular-nums text-white">{m.value} cm</span>
+                <span className="font-medium tabular-nums text-white">{m.value} cm</span>
                 <button
                   onClick={async () => {
                     await remove(m.id)
@@ -283,6 +280,6 @@ function Measurements() {
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   )
 }

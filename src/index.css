@@ -14,10 +14,20 @@ body,
 
 body {
   margin: 0;
-  background: #0f172a;
+  /* A subtle top-down depth gradient over deep slate for a polished feel. */
+  background-color: #0b1120;
+  background-image: radial-gradient(
+    1200px 600px at 50% -10%,
+    rgba(79, 70, 229, 0.12),
+    transparent 60%
+  );
+  background-attachment: fixed;
   color: #e2e8f0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
-    Arial, sans-serif;
+  font-family: 'Inter var', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -27,4 +37,38 @@ body {
 }
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Quieter, on-brand text selection. */
+::selection {
+  background: rgba(99, 102, 241, 0.3);
+}
+
+/* Slim, unobtrusive scrollbars that match the dark surfaces. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Consistent keyboard focus across the app. */
+:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 2px;
+}
+
+/* Tame the native date-picker indicator so it reads on dark inputs. */
+input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
 }

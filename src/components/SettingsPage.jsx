@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTargets } from '../hooks/useTargets.js'
+import { PageHeader, Card, Segmented, Button, inputCls } from './ui.jsx'
 
 // Goal + TDEE configuration. Reads/writes the single settings row.
 export default function SettingsPage() {
@@ -9,7 +10,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <h1 className="text-2xl font-bold text-white">Settings</h1>
+      <PageHeader title="Settings" subtitle="Goal & energy targets" />
 
       <TdeeMode settings={settings} targets={targets} onSave={saveSettings} />
       {settings.tdee_mode === 'custom' ? (
@@ -37,27 +38,29 @@ function Activity({ settings, onSave }) {
   const [saving, setSaving] = useState(false)
 
   return (
-    <Section
+    <Card
       title="Activity"
-      hint="Sets your starting calorie estimate. Once you've logged ~1 week, the adaptive engine measures your real TDEE and takes over."
+      subtitle="Sets your starting calorie estimate. Once you've logged ~1 week, the adaptive engine measures your real TDEE and takes over."
+      bodyClass="space-y-4"
     >
       <div className="space-y-1.5">
-        {ACTIVITY_OPTIONS.map((o) => (
-          <button
-            key={o.value}
-            onClick={() => onSave({ activity_level: o.value })}
-            className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm ${
-              settings.activity_level === o.value
-                ? 'bg-sky-600 text-white'
-                : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
-            }`}
-          >
-            <span className="font-medium">{o.label}</span>
-            <span className={settings.activity_level === o.value ? 'text-sky-100' : 'text-slate-500'}>
-              {o.hint}
-            </span>
-          </button>
-        ))}
+        {ACTIVITY_OPTIONS.map((o) => {
+          const active = settings.activity_level === o.value
+          return (
+            <button
+              key={o.value}
+              onClick={() => onSave({ activity_level: o.value })}
+              className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
+                active
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-slate-900/70 text-slate-300 ring-1 ring-slate-800 hover:bg-slate-800'
+              }`}
+            >
+              <span className="font-medium">{o.label}</span>
+              <span className={active ? 'text-brand-100' : 'text-slate-500'}>{o.hint}</span>
+            </button>
+          )
+        })}
       </div>
 
       <label className="block text-sm text-slate-400">
@@ -70,62 +73,35 @@ function Activity({ settings, onSave }) {
             inputMode="numeric"
             value={steps}
             onChange={(e) => setSteps(e.target.value)}
-            className="w-32 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+            className={`${inputCls} w-32`}
           />
-          <button
+          <Button
+            variant="subtle"
+            size="lg"
             onClick={async () => {
               setSaving(true)
               await onSave({ daily_steps: parseInt(steps, 10) || 0 })
               setSaving(false)
             }}
             disabled={saving}
-            className="rounded-lg bg-slate-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             {saving ? '…' : 'Save'}
-          </button>
+          </Button>
         </div>
       </label>
-    </Section>
-  )
-}
-
-function Section({ title, hint, children }) {
-  return (
-    <section className="space-y-4 rounded-2xl bg-slate-800/60 p-4">
-      <div>
-        <h2 className="text-sm font-semibold text-slate-200">{title}</h2>
-        {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
-      </div>
-      {children}
-    </section>
-  )
-}
-
-function Segmented({ value, options, onChange }) {
-  return (
-    <div className="inline-flex rounded-lg bg-slate-900 p-1 ring-1 ring-slate-700">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          onClick={() => onChange(o.value)}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            value === o.value ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
+    </Card>
   )
 }
 
 function TdeeMode({ settings, targets, onSave }) {
   return (
-    <Section
+    <Card
       title="TDEE mode"
-      hint="Dynamic adapts your targets from logged weight + intake. Custom lets you set fixed calories and macros."
+      subtitle="Dynamic adapts your targets from logged weight + intake. Custom lets you set fixed calories and macros."
+      bodyClass="space-y-3"
     >
       <Segmented
+        size="md"
         value={settings.tdee_mode}
         onChange={(v) => onSave({ tdee_mode: v })}
         options={[
@@ -139,7 +115,7 @@ function TdeeMode({ settings, targets, onSave }) {
           {targets.tdee_source === 'estimate' && ' (rough — log more days for an adaptive figure)'}
         </p>
       )}
-    </Section>
+    </Card>
   )
 }
 
@@ -167,11 +143,12 @@ function GoalConfig({ settings, onSave }) {
   }
 
   return (
-    <Section title="Goal" hint="Negative = cut (lose), positive = bulk (gain).">
+    <Card title="Goal" subtitle="Negative = cut (lose), positive = bulk (gain)." bodyClass="space-y-4">
       <div className="space-y-2">
         <span className="text-sm text-slate-400">Rate unit</span>
         <div>
           <Segmented
+            size="md"
             value={unit}
             onChange={(v) => onSave({ goal_rate_unit: v })}
             options={[
@@ -190,7 +167,7 @@ function GoalConfig({ settings, onSave }) {
           inputMode="decimal"
           value={rate}
           onChange={(e) => setRate(e.target.value)}
-          className="mt-1 w-40 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className={`${inputCls} mt-1 block w-40`}
         />
       </label>
 
@@ -203,18 +180,14 @@ function GoalConfig({ settings, onSave }) {
           value={goalWeight}
           placeholder="—"
           onChange={(e) => setGoalWeight(e.target.value)}
-          className="mt-1 w-40 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className={`${inputCls} mt-1 block w-40`}
         />
       </label>
 
-      <button
-        onClick={save}
-        disabled={saving}
-        className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-      >
+      <Button onClick={save} disabled={saving}>
         {saving ? '…' : 'Save goal'}
-      </button>
-    </Section>
+      </Button>
+    </Card>
   )
 }
 
@@ -241,7 +214,11 @@ function CustomTargets({ settings, onSave }) {
   }
 
   return (
-    <Section title="Custom targets" hint="Fixed daily calories and macros. Leave a macro blank to auto-fill it.">
+    <Card
+      title="Custom targets"
+      subtitle="Fixed daily calories and macros. Leave a macro blank to auto-fill it."
+      bodyClass="space-y-4"
+    >
       <label className="block text-sm text-slate-400">
         Calories (kcal)
         <input
@@ -249,7 +226,7 @@ function CustomTargets({ settings, onSave }) {
           inputMode="decimal"
           value={kcal}
           onChange={(e) => setKcal(e.target.value)}
-          className="mt-1 w-40 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className={`${inputCls} mt-1 block w-40`}
         />
       </label>
 
@@ -265,14 +242,10 @@ function CustomTargets({ settings, onSave }) {
         </p>
       )}
 
-      <button
-        onClick={save}
-        disabled={saving}
-        className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-      >
+      <Button onClick={save} disabled={saving}>
         {saving ? '…' : 'Save targets'}
-      </button>
-    </Section>
+      </Button>
+    </Card>
   )
 }
 
@@ -285,7 +258,7 @@ function Field({ label, value, onChange }) {
         inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        className={`${inputCls} mt-1 block w-full`}
       />
     </label>
   )

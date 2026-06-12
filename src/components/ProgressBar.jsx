@@ -1,4 +1,4 @@
-export default function ProgressBar({ label, value, target, unit = 'g', color = 'bg-sky-500' }) {
+export default function ProgressBar({ label, value, target, unit = 'g', color = 'bg-brand-500' }) {
   const pct = target > 0 ? Math.min(100, (value / target) * 100) : 0
   const over = target > 0 && value > target
   return (

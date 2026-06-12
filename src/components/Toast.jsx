@@ -26,8 +26,8 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={show}>
       {children}
       {toast && (
-        <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-20 z-50 flex justify-center px-4 lg:bottom-6">
-          <div className="pointer-events-auto flex items-center gap-3 rounded-xl bg-slate-700 px-4 py-3 text-sm text-white shadow-lg ring-1 ring-slate-600">
+        <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center px-4 lg:bottom-6">
+          <div className="animate-toast-in pointer-events-auto flex items-center gap-3 rounded-xl bg-slate-800 px-4 py-3 text-sm text-white shadow-pop ring-1 ring-white/10">
             <span>{toast.message}</span>
             {toast.actionLabel && (
               <button
@@ -35,7 +35,7 @@ export function ToastProvider({ children }) {
                   dismiss()
                   await toast.onAction?.()
                 }}
-                className="font-semibold text-sky-300 hover:text-sky-200"
+                className="font-semibold text-brand-300 hover:text-brand-200"
               >
                 {toast.actionLabel}
               </button>
