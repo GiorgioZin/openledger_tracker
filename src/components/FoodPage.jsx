@@ -23,13 +23,32 @@ export default function FoodPage() {
   const today = todayISO()
   const [date, setDate] = useState(today)
   const { totals, rows, reload } = useDayTotals(date)
-  const { recents, meals, favorites, reload: reloadQuick, logItems, saveMeal, deleteMeal, addFavorite, removeFavorite } =
+  const { recents, meals, favorites, reload: reloadQuick, logItems, saveMeal, deleteMeal, restoreMeal, addFavorite, removeFavorite } =
     useQuickAdd()
-  const { recipes, create: createRecipe, remove: removeRecipe } = useRecipes()
+  const { recipes, create: createRecipe, remove: removeRecipe, restore: restoreRecipe } = useRecipes()
   const [selected, setSelected] = useState(null) // food awaiting a grams entry
   const [quickAdd, setQuickAdd] = useState(false)
+  const toast = useToast()
 
   const isToday = date === today
+
+  // Deletes for saved meals, recipes and favorites get the same undo-on-delete
+  // affordance the food log and weigh-ins already have.
+  async function deleteMealUndoable(id) {
+    const m = meals.find((x) => x.id === id)
+    await deleteMeal(id)
+    if (m) toast({ message: `Removed ${m.name}`, actionLabel: 'Undo', onAction: () => restoreMeal(m) })
+  }
+  async function removeRecipeUndoable(id) {
+    const r = recipes.find((x) => x.id === id)
+    await removeRecipe(id)
+    if (r) toast({ message: `Removed ${r.name}`, actionLabel: 'Undo', onAction: () => restoreRecipe(r) })
+  }
+  async function removeFavUndoable(name) {
+    const f = favorites.find((x) => x.name === name)
+    await removeFavorite(name)
+    if (f) toast({ message: `Removed ${f.name}`, actionLabel: 'Undo', onAction: () => addFavorite(f) })
+  }
 
   async function refreshAll() {
     await Promise.all([reload(), reloadQuick()])
@@ -67,16 +86,16 @@ export default function FoodPage() {
         canSaveToday={rows.length > 0}
         onPickRecent={setSelected}
         onLogMeal={logMeal}
-        onDeleteMeal={deleteMeal}
+        onDeleteMeal={deleteMealUndoable}
         onSaveToday={saveDayAsMeal}
         onAddFav={addFavorite}
-        onRemoveFav={removeFavorite}
+        onRemoveFav={removeFavUndoable}
       />
 
       <RecipesPanel
         recipes={recipes}
         onLog={logRecipe}
-        onDelete={removeRecipe}
+        onDelete={removeRecipeUndoable}
         onCreate={createRecipe}
       />
 
@@ -256,7 +275,7 @@ function QuickAdd({ recents, meals, favorites, canSaveToday, onPickRecent, onLog
                   </button>
                   <button
                     onClick={() => onDeleteMeal(m.id)}
-                    className="text-slate-500"
+                    className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-rose-500/15 hover:text-rose-400"
                     aria-label="Delete meal"
                   >
                     ✕
@@ -343,7 +362,11 @@ function RecipeRow({ recipe, onLog, onDelete }) {
         >
           Log
         </button>
-        <button onClick={() => onDelete(recipe.id)} className="text-slate-500" aria-label="Delete recipe">
+        <button
+          onClick={() => onDelete(recipe.id)}
+          className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-rose-500/15 hover:text-rose-400"
+          aria-label="Delete recipe"
+        >
           ✕
         </button>
       </span>
@@ -411,7 +434,7 @@ function RecipeBuilder({ onCancel, onSave }) {
               </span>
               <button
                 onClick={() => setItems((xs) => xs.filter((_, j) => j !== i))}
-                className="text-slate-500"
+                className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
                 aria-label="Remove ingredient"
               >
                 ✕
@@ -436,7 +459,11 @@ function RecipeBuilder({ onCancel, onSave }) {
           <button onClick={addIngredient} className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white">
             Add
           </button>
-          <button onClick={() => setPending(null)} className="text-slate-500" aria-label="Cancel">
+          <button
+            onClick={() => setPending(null)}
+            className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
+            aria-label="Cancel"
+          >
             ✕
           </button>
         </div>
@@ -922,10 +949,18 @@ function LoggedItem({ row, onChange, onRemove }) {
         </span>
       </span>
       <span className="flex items-center gap-3">
-        <button onClick={() => setEditing(true)} className="text-slate-500" aria-label="Edit">
+        <button
+          onClick={() => setEditing(true)}
+          className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
+          aria-label="Edit"
+        >
           ✎
         </button>
-        <button onClick={onRemove} className="text-slate-500" aria-label="Delete">
+        <button
+          onClick={onRemove}
+          className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-rose-500/15 hover:text-rose-400"
+          aria-label="Delete"
+        >
           ✕
         </button>
       </span>
