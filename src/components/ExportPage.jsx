@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { todayISO, addDaysISO } from '../lib/dates.js'
 import { exportWorkbook } from '../lib/export.js'
+import { PageHeader, Card, Button, inputCls } from './ui.jsx'
 
 export default function ExportPage() {
   const [from, setFrom] = useState(addDaysISO(todayISO(), -90))
@@ -69,12 +70,9 @@ export default function ExportPage() {
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
-      <h1 className="text-2xl font-bold text-white">Export</h1>
-      <p className="-mt-3 text-sm text-slate-400">
-        Download a multi-sheet Excel file for any date range.
-      </p>
+      <PageHeader title="Export" subtitle="Download a multi-sheet Excel file for any date range." />
 
-      <div className="space-y-3 rounded-2xl bg-slate-800/60 p-4">
+      <Card bodyClass="space-y-3">
         <label className="block text-sm text-slate-300">
           From
           <input
@@ -82,7 +80,7 @@ export default function ExportPage() {
             value={from}
             max={to}
             onChange={(e) => setFrom(e.target.value)}
-            className="mt-1 w-full rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
+            className={`${inputCls} mt-1 block w-full px-4 py-3`}
           />
         </label>
         <label className="block text-sm text-slate-300">
@@ -92,22 +90,18 @@ export default function ExportPage() {
             value={to}
             max={todayISO()}
             onChange={(e) => setTo(e.target.value)}
-            className="mt-1 w-full rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
+            className={`${inputCls} mt-1 block w-full px-4 py-3`}
           />
         </label>
-        <button
-          onClick={run}
-          disabled={busy}
-          className="w-full rounded-lg bg-brand-600 py-3 font-semibold text-white disabled:opacity-50"
-        >
+        <Button onClick={run} disabled={busy} size="lg" className="w-full">
           {busy ? 'Building…' : 'Export to Excel'}
-        </button>
+        </Button>
         {err && <p className="text-sm text-red-400">{err}</p>}
-      </div>
+      </Card>
 
       <p className="text-xs text-slate-500">
         You can also export ad hoc from the Supabase dashboard (Table Editor →
-        Export → CSV). See <code>supabase/README.md</code>.
+        Export → CSV). See <code className="rounded bg-slate-800 px-1 py-0.5">supabase/README.md</code>.
       </p>
     </div>
   )

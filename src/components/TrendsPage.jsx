@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { todayISO, addDaysISO, daysBetween } from '../lib/dates.js'
 import { useTargets } from '../hooks/useTargets.js'
 import { WeightChart, CaloriesChart } from './Charts.jsx'
+import { PageHeader, Card, Stat, Segmented } from './ui.jsx'
 
 const RANGES = [
   { value: 30, label: '30d' },
@@ -41,17 +42,24 @@ export default function TrendsPage() {
   const useWeekly = rangeDays === 0 || rangeDays > 35
   const caloriesData = useWeekly ? weeklyAverages(intake) : intake
 
+  // Direction-aware accent for the headline weight change.
+  const deltaAccent =
+    deltaKg == null || deltaKg === 0 ? 'text-white' : deltaKg < 0 ? 'text-emerald-400' : 'text-amber-400'
+
   return (
     <div className="mx-auto max-w-4xl space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Trends</h1>
+      <PageHeader title="Trends" subtitle="Your progress over time">
         <Segmented value={rangeDays} options={RANGES} onChange={setRangeDays} />
-      </div>
+      </PageHeader>
 
       <section className="grid grid-cols-3 gap-3">
-        <Stat label="Weight change" value={deltaKg == null ? '—' : `${deltaKg > 0 ? '+' : ''}${deltaKg} kg`} />
+        <Stat
+          label="Weight change"
+          value={deltaKg == null ? '—' : `${deltaKg > 0 ? '+' : ''}${deltaKg} kg`}
+          accent={deltaAccent}
+        />
         <Stat label="Avg rate" value={rateKg == null ? '—' : `${rateKg > 0 ? '+' : ''}${rateKg}`} sub="kg/week" />
-        <Stat label="Avg intake" value={avgIntake == null ? '—' : `${avgIntake}`} sub="kcal/day" />
+        <Stat label="Avg intake" value={avgIntake == null ? '—' : avgIntake.toLocaleString()} sub="kcal/day" />
       </section>
 
       <Card title="Weight" subtitle={weights.length ? `${weights[weights.length - 1].trend.toFixed(1)} kg` : ''}>
@@ -97,44 +105,4 @@ function rangeLabel(days) {
   if (days === 0) return 'all time'
   if (days >= 365) return 'last year'
   return `last ${days} days`
-}
-
-function Segmented({ value, options, onChange }) {
-  return (
-    <div className="inline-flex rounded-lg bg-slate-900 p-1 ring-1 ring-slate-700">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          onClick={() => onChange(o.value)}
-          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-            value === o.value ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function Card({ title, subtitle, children }) {
-  return (
-    <section className="rounded-2xl bg-slate-800/60 p-4">
-      <div className="mb-2 flex items-baseline justify-between">
-        <h2 className="text-sm font-medium text-slate-300">{title}</h2>
-        {subtitle && <span className="text-xs text-slate-500">{subtitle}</span>}
-      </div>
-      {children}
-    </section>
-  )
-}
-
-function Stat({ label, value, sub }) {
-  return (
-    <div className="rounded-2xl bg-slate-800/60 p-3 text-center">
-      <div className="text-xs text-slate-500">{label}</div>
-      <div className="mt-1 text-lg font-semibold tabular-nums text-white">{value}</div>
-      {sub && <div className="text-xs text-slate-500">{sub}</div>}
-    </div>
-  )
 }
