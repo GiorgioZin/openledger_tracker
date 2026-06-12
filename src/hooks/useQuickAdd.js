@@ -123,6 +123,15 @@ export function useQuickAdd(limit = 8) {
     [load],
   )
 
+  // Re-insert a previously-deleted saved meal (preserving its id) — powers undo.
+  const restoreMeal = useCallback(
+    async (row) => {
+      await supabase.from('meals').insert(row)
+      await load()
+    },
+    [load],
+  )
+
   const addFavorite = useCallback(
     async (food) => {
       const { data: u } = await supabase.auth.getUser()
@@ -152,5 +161,5 @@ export function useQuickAdd(limit = 8) {
     [load],
   )
 
-  return { recents, meals, favorites, reload: load, logItems, saveMeal, deleteMeal, addFavorite, removeFavorite }
+  return { recents, meals, favorites, reload: load, logItems, saveMeal, deleteMeal, restoreMeal, addFavorite, removeFavorite }
 }

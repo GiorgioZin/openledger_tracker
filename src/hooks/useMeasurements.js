@@ -46,5 +46,14 @@ export function useMeasurements() {
     [load],
   )
 
-  return { byKind, kinds: Object.keys(byKind), loading, add, remove, reload: load }
+  // Re-insert a previously-deleted row (preserving its id) — powers undo.
+  const restore = useCallback(
+    async (row) => {
+      await supabase.from('measurements').insert(row)
+      await load()
+    },
+    [load],
+  )
+
+  return { byKind, kinds: Object.keys(byKind), loading, add, remove, restore, reload: load }
 }

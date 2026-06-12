@@ -39,7 +39,16 @@ export function useRecipes() {
     [load],
   )
 
-  return { recipes, reload: load, create, remove }
+  // Re-insert a previously-deleted recipe (preserving its id) — powers undo.
+  const restore = useCallback(
+    async (row) => {
+      await supabase.from('recipes').insert(row)
+      await load()
+    },
+    [load],
+  )
+
+  return { recipes, reload: load, create, remove, restore }
 }
 
 // Sum a recipe's ingredient macros, then scale to `count` servings.

@@ -143,14 +143,14 @@ export default function WeightPage() {
                   </span>
                   <button
                     onClick={() => editKg(findRow(rows, r.logged_on))}
-                    className="text-slate-500"
+                    className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
                     aria-label="Edit"
                   >
                     ✎
                   </button>
                   <button
                     onClick={() => remove(findRow(rows, r.logged_on))}
-                    className="text-slate-500"
+                    className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-rose-500/15 hover:text-rose-400"
                     aria-label="Delete"
                   >
                     ✕
@@ -182,7 +182,8 @@ function findRow(rows, iso) {
 const PRESET_KINDS = ['waist', 'chest', 'hips', 'arm', 'thigh', 'neck']
 
 function Measurements() {
-  const { byKind, add, remove, loading } = useMeasurements()
+  const { byKind, add, remove, restore, loading } = useMeasurements()
+  const toast = useToast()
   const available = [...new Set([...PRESET_KINDS, ...Object.keys(byKind)])]
   const [kind, setKind] = useState('waist')
   const [value, setValue] = useState('')
@@ -263,7 +264,18 @@ function Measurements() {
               <span className="text-sm text-slate-400">{prettyDate(m.logged_on)}</span>
               <span className="flex items-center gap-3">
                 <span className="tabular-nums text-white">{m.value} cm</span>
-                <button onClick={() => remove(m.id)} className="text-slate-500" aria-label="Delete">
+                <button
+                  onClick={async () => {
+                    await remove(m.id)
+                    toast({
+                      message: `Removed ${m.kind} ${m.value} cm`,
+                      actionLabel: 'Undo',
+                      onAction: () => restore(m),
+                    })
+                  }}
+                  className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-rose-500/15 hover:text-rose-400"
+                  aria-label="Delete"
+                >
                   ✕
                 </button>
               </span>
