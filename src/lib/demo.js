@@ -117,6 +117,12 @@ function seed() {
     { id: uuid(), user_id: DEMO_USER.id, logged_on: today, ml: 500, created_at: `${today}T11:00:00.000Z` },
   ]
 
+  // A couple of niggles being kept an eye on.
+  const niggles = [
+    { id: uuid(), user_id: DEMO_USER.id, area: 'Left shoulder', intensity: 4, note: 'Tweaked during overhead press', logged_on: addDaysISO(today, -2), created_at: `${addDaysISO(today, -2)}T09:00:00.000Z` },
+    { id: uuid(), user_id: DEMO_USER.id, area: 'Lower back', intensity: 3, note: null, logged_on: addDaysISO(today, -5), created_at: `${addDaysISO(today, -5)}T09:00:00.000Z` },
+  ]
+
   return {
     weight_log,
     food_log,
@@ -128,6 +134,7 @@ function seed() {
     recipes,
     measurements,
     water_log,
+    niggles,
     favorites: [
       { id: uuid(), user_id: DEMO_USER.id, name: 'Chicken breast', kcal: 165, protein_g: 31, carb_g: 0, fat_g: 3.6, fiber_g: 0, sugar_g: 0, satfat_g: 1, sodium_mg: 74, default_grams: 200, created_at: `${today}T05:00:00.000Z` },
       { id: uuid(), user_id: DEMO_USER.id, name: 'Greek yogurt', kcal: 59, protein_g: 10, carb_g: 3.6, fat_g: 0.4, fiber_g: 0, sugar_g: 3.6, satfat_g: 0.1, sodium_mg: 36, default_grams: 200, created_at: `${today}T05:01:00.000Z` },
