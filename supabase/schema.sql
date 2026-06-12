@@ -105,6 +105,7 @@ create table if not exists public.settings (
   activity_level text not null default 'moderate', -- sedentary|light|moderate|active|very_active
   daily_steps    integer not null default 0,      -- average steps/day, feeds the estimate
   water_goal_ml  integer not null default 2500,    -- daily hydration goal
+  gym_mode       text not null default 'gym',       -- 'home' | 'gym', drives exercise suggestions
   custom_kcal     numeric,                      -- used when tdee_mode = 'custom'
   custom_protein_g numeric,
   custom_carb_g    numeric,

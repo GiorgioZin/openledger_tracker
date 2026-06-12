@@ -234,6 +234,7 @@ function seed() {
         activity_level: 'moderate',
         daily_steps: 8000,
         water_goal_ml: 2500,
+        gym_mode: 'gym',
         custom_kcal: null,
         custom_protein_g: null,
         custom_carb_g: null,
