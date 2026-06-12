@@ -96,14 +96,14 @@ export default function WeightPage() {
             value={kg}
             onChange={(e) => setKg(e.target.value)}
             placeholder="kg"
-            className="w-20 rounded-lg bg-slate-900 px-3 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+            className="w-20 rounded-lg bg-slate-900 px-3 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-brand-500"
           />
           <input
             type="date"
             value={date}
             max={todayISO()}
             onChange={(e) => setDate(e.target.value)}
-            className="min-w-0 flex-1 rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+            className="min-w-0 flex-1 rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
           />
           <button
             type="submit"
@@ -212,7 +212,7 @@ function Measurements() {
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value)}
-          className="rounded-lg bg-slate-900 px-2 py-1.5 text-sm capitalize text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className="rounded-lg bg-slate-900 px-2 py-1.5 text-sm capitalize text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
         >
           {available.map((k) => (
             <option key={k} value={k} className="capitalize">
@@ -230,14 +230,14 @@ function Measurements() {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="cm"
-          className="w-24 rounded-lg bg-slate-900 px-3 py-2 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className="w-24 rounded-lg bg-slate-900 px-3 py-2 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-brand-500"
         />
         <input
           type="date"
           value={date}
           max={todayISO()}
           onChange={(e) => setDate(e.target.value)}
-          className="min-w-0 flex-1 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className="min-w-0 flex-1 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
         />
         <button
           type="submit"

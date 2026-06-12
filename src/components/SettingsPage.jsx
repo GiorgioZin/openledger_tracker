@@ -48,12 +48,12 @@ function Activity({ settings, onSave }) {
             onClick={() => onSave({ activity_level: o.value })}
             className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm ${
               settings.activity_level === o.value
-                ? 'bg-sky-600 text-white'
+                ? 'bg-brand-600 text-white'
                 : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
             }`}
           >
             <span className="font-medium">{o.label}</span>
-            <span className={settings.activity_level === o.value ? 'text-sky-100' : 'text-slate-500'}>
+            <span className={settings.activity_level === o.value ? 'text-brand-100' : 'text-slate-500'}>
               {o.hint}
             </span>
           </button>
@@ -70,7 +70,7 @@ function Activity({ settings, onSave }) {
             inputMode="numeric"
             value={steps}
             onChange={(e) => setSteps(e.target.value)}
-            className="w-32 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+            className="w-32 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
           />
           <button
             onClick={async () => {
@@ -109,7 +109,7 @@ function Segmented({ value, options, onChange }) {
           key={o.value}
           onClick={() => onChange(o.value)}
           className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            value === o.value ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+            value === o.value ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           {o.label}
@@ -190,7 +190,7 @@ function GoalConfig({ settings, onSave }) {
           inputMode="decimal"
           value={rate}
           onChange={(e) => setRate(e.target.value)}
-          className="mt-1 w-40 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className="mt-1 w-40 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
         />
       </label>
 
@@ -203,14 +203,14 @@ function GoalConfig({ settings, onSave }) {
           value={goalWeight}
           placeholder="—"
           onChange={(e) => setGoalWeight(e.target.value)}
-          className="mt-1 w-40 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className="mt-1 w-40 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
         />
       </label>
 
       <button
         onClick={save}
         disabled={saving}
-        className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
         {saving ? '…' : 'Save goal'}
       </button>
@@ -249,7 +249,7 @@ function CustomTargets({ settings, onSave }) {
           inputMode="decimal"
           value={kcal}
           onChange={(e) => setKcal(e.target.value)}
-          className="mt-1 w-40 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className="mt-1 w-40 rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
         />
       </label>
 
@@ -268,7 +268,7 @@ function CustomTargets({ settings, onSave }) {
       <button
         onClick={save}
         disabled={saving}
-        className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
         {saving ? '…' : 'Save targets'}
       </button>
@@ -285,7 +285,7 @@ function Field({ label, value, onChange }) {
         inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        className="mt-1 w-full rounded-lg bg-slate-900 px-3 py-2 text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
       />
     </label>
   )

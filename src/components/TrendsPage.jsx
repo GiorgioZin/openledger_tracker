@@ -107,7 +107,7 @@ function Segmented({ value, options, onChange }) {
           key={o.value}
           onClick={() => onChange(o.value)}
           className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-            value === o.value ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+            value === o.value ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           {o.label}

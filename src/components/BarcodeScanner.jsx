@@ -58,7 +58,7 @@ export default function BarcodeScanner({ onDetected, onClose }) {
         <div className="relative flex flex-1 items-center justify-center">
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video ref={videoRef} className="max-h-full w-full rounded-xl object-cover" muted playsInline />
-          <div className="pointer-events-none absolute inset-x-8 top-1/2 h-24 -translate-y-1/2 rounded-lg border-2 border-sky-400/80" />
+          <div className="pointer-events-none absolute inset-x-8 top-1/2 h-24 -translate-y-1/2 rounded-lg border-2 border-brand-400/80" />
         </div>
       )}
       <p className="mt-3 text-center text-xs text-slate-400">

@@ -82,7 +82,7 @@ export default function ExportPage() {
             value={from}
             max={to}
             onChange={(e) => setFrom(e.target.value)}
-            className="mt-1 w-full rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+            className="mt-1 w-full rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
           />
         </label>
         <label className="block text-sm text-slate-300">
@@ -92,13 +92,13 @@ export default function ExportPage() {
             value={to}
             max={todayISO()}
             onChange={(e) => setTo(e.target.value)}
-            className="mt-1 w-full rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+            className="mt-1 w-full rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
           />
         </label>
         <button
           onClick={run}
           disabled={busy}
-          className="w-full rounded-lg bg-sky-600 py-3 font-semibold text-white disabled:opacity-50"
+          className="w-full rounded-lg bg-brand-600 py-3 font-semibold text-white disabled:opacity-50"
         >
           {busy ? 'Building…' : 'Export to Excel'}
         </button>

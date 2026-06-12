@@ -160,7 +160,7 @@ function DateNav({ date, today, onChange }) {
         value={date}
         max={today}
         onChange={(e) => onChange(e.target.value || today)}
-        className="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        className="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
       />
       <button
         onClick={() => onChange(addDaysISO(date, 1))}
@@ -173,7 +173,7 @@ function DateNav({ date, today, onChange }) {
       {!isToday && (
         <button
           onClick={() => onChange(today)}
-          className="ml-1 rounded-lg px-2 py-2 text-xs font-medium text-sky-400 hover:text-sky-300"
+          className="ml-1 rounded-lg px-2 py-2 text-xs font-medium text-brand-400 hover:text-brand-300"
         >
           Today
         </button>
@@ -184,7 +184,7 @@ function DateNav({ date, today, onChange }) {
 
 function FoodChip({ food, onPick, starred, onToggleStar }) {
   return (
-    <span className="inline-flex items-center rounded-full bg-slate-900 ring-1 ring-slate-700 hover:ring-sky-500">
+    <span className="inline-flex items-center rounded-full bg-slate-900 ring-1 ring-slate-700 hover:ring-brand-500">
       <button
         onClick={() => onPick(food)}
         className="py-1.5 pl-3 pr-1 text-sm text-slate-200"
@@ -244,7 +244,7 @@ function QuickAdd({ recents, meals, favorites, canSaveToday, onPickRecent, onLog
           <button
             onClick={onSaveToday}
             disabled={!canSaveToday}
-            className="text-xs font-medium text-sky-400 disabled:text-slate-600"
+            className="text-xs font-medium text-brand-400 disabled:text-slate-600"
           >
             ＋ Save today
           </button>
@@ -302,7 +302,7 @@ function RecipesPanel({ recipes, onLog, onDelete, onCreate }) {
         <h2 className="text-sm font-medium text-slate-300">Recipes</h2>
         <button
           onClick={() => setBuilding((v) => !v)}
-          className="text-xs font-medium text-sky-400 hover:text-sky-300"
+          className="text-xs font-medium text-brand-400 hover:text-brand-300"
         >
           {building ? 'Cancel' : '＋ New recipe'}
         </button>
@@ -353,7 +353,7 @@ function RecipeRow({ recipe, onLog, onDelete }) {
           step="0.5"
           value={count}
           onChange={(e) => setCount(parseFloat(e.target.value) || 1)}
-          className="w-14 rounded-lg bg-slate-900 px-2 py-1.5 text-center text-sm text-white ring-1 ring-slate-700 focus:ring-sky-500"
+          className="w-14 rounded-lg bg-slate-900 px-2 py-1.5 text-center text-sm text-white ring-1 ring-slate-700 focus:ring-brand-500"
           aria-label="Servings to log"
         />
         <button
@@ -411,7 +411,7 @@ function RecipeBuilder({ onCancel, onSave }) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Recipe name"
-        className="w-full rounded-lg bg-slate-900 px-3 py-2 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        className="w-full rounded-lg bg-slate-900 px-3 py-2 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-brand-500"
       />
       <label className="flex items-center gap-2 text-sm text-slate-400">
         Servings
@@ -421,7 +421,7 @@ function RecipeBuilder({ onCancel, onSave }) {
           step="1"
           value={servings}
           onChange={(e) => setServings(parseInt(e.target.value, 10) || 1)}
-          className="w-20 rounded-lg bg-slate-900 px-3 py-2 text-white ring-1 ring-slate-700 focus:ring-sky-500"
+          className="w-20 rounded-lg bg-slate-900 px-3 py-2 text-white ring-1 ring-slate-700 focus:ring-brand-500"
         />
       </label>
 
@@ -452,11 +452,11 @@ function RecipeBuilder({ onCancel, onSave }) {
             inputMode="decimal"
             value={grams}
             onChange={(e) => setGrams(e.target.value)}
-            className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-sky-500"
+            className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-brand-500"
             aria-label="Grams"
           />
           <span className="text-xs text-slate-500">g</span>
-          <button onClick={addIngredient} className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white">
+          <button onClick={addIngredient} className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white">
             Add
           </button>
           <button
@@ -598,7 +598,7 @@ function FoodSearch({ onPick }) {
           onChange={(e) => setQ(e.target.value)}
           inputMode="search"
           placeholder="Search or paste a barcode"
-          className="min-w-0 flex-1 rounded-lg bg-slate-800 px-4 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+          className="min-w-0 flex-1 rounded-lg bg-slate-800 px-4 py-3 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-brand-500"
         />
         <button
           type="button"
@@ -612,7 +612,7 @@ function FoodSearch({ onPick }) {
         <button
           type="submit"
           disabled={busy}
-          className="rounded-lg bg-sky-600 px-4 font-semibold text-white disabled:opacity-50"
+          className="rounded-lg bg-brand-600 px-4 font-semibold text-white disabled:opacity-50"
         >
           {busy ? '…' : 'Go'}
         </button>
@@ -636,7 +636,7 @@ function FoodSearch({ onPick }) {
                   {Math.round(f.carb_g)} F{Math.round(f.fat_g)}
                 </span>
               </span>
-              <span className="text-sky-400">＋</span>
+              <span className="text-brand-400">＋</span>
             </button>
           </li>
         ))}
@@ -715,7 +715,7 @@ function LogForm({ food, dateISO, onCancel, onLogged }) {
         inputMode="decimal"
         value={grams}
         onChange={(e) => setGrams(e.target.value)}
-        className="mt-1 w-full rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        className="mt-1 w-full rounded-lg bg-slate-900 px-4 py-3 text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
       />
       <div className="mt-2 flex flex-wrap gap-1.5">
         {[50, 100, 150, 200, 250].map((g) => (
@@ -725,7 +725,7 @@ function LogForm({ food, dateISO, onCancel, onLogged }) {
             onClick={() => setGrams(g)}
             className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
               Number(grams) === g
-                ? 'bg-sky-600 text-white ring-sky-600'
+                ? 'bg-brand-600 text-white ring-brand-600'
                 : 'bg-slate-900 text-slate-300 ring-slate-700 hover:ring-slate-600'
             }`}
           >
@@ -742,7 +742,7 @@ function LogForm({ food, dateISO, onCancel, onLogged }) {
             type="button"
             onClick={() => setMeal(m)}
             className={`rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
-              meal === m ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              meal === m ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             {m}
@@ -886,7 +886,7 @@ function LoggedItem({ row, onChange, onRemove }) {
                   inputMode="decimal"
                   value={grams}
                   onChange={(e) => setGrams(e.target.value)}
-                  className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-sky-500"
+                  className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-brand-500"
                   aria-label="Grams"
                 />
                 <span className="text-xs text-slate-500">g</span>
@@ -898,7 +898,7 @@ function LoggedItem({ row, onChange, onRemove }) {
                   inputMode="decimal"
                   value={kcal}
                   onChange={(e) => setKcal(e.target.value)}
-                  className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-sky-500"
+                  className="w-20 rounded-lg bg-slate-900 px-2 py-1.5 text-white ring-1 ring-slate-700 focus:ring-brand-500"
                   aria-label="Calories"
                 />
                 <span className="text-xs text-slate-500">kcal</span>
@@ -912,7 +912,7 @@ function LoggedItem({ row, onChange, onRemove }) {
               key={m}
               onClick={() => setMeal(m)}
               className={`rounded-md px-2 py-1 text-xs font-medium capitalize ${
-                meal === m ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                meal === m ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               {m}
@@ -1018,7 +1018,7 @@ function QuickAddForm({ dateISO, onCancel, onLogged }) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Name (optional)"
-        className="mt-3 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        className="mt-3 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-white placeholder-slate-500 outline-none ring-1 ring-slate-700 focus:ring-brand-500"
       />
       <div className="mt-2 grid grid-cols-4 gap-2">
         <Field label="kcal" value={kcal} onChange={setKcal} />
@@ -1034,7 +1034,7 @@ function QuickAddForm({ dateISO, onCancel, onLogged }) {
             type="button"
             onClick={() => setMeal(m)}
             className={`rounded-md px-2.5 py-1 text-xs font-medium capitalize ${
-              meal === m ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              meal === m ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             {m}
@@ -1069,7 +1069,7 @@ function Field({ label, value, onChange }) {
         inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-lg bg-slate-900 px-2 py-2 text-center text-white outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        className="mt-1 w-full rounded-lg bg-slate-900 px-2 py-2 text-center text-white outline-none ring-1 ring-slate-700 focus:ring-brand-500"
       />
     </label>
   )

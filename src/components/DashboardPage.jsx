@@ -63,9 +63,9 @@ export default function DashboardPage() {
       </header>
 
       {!loading && targets && !loggedToday && (
-        <div className="flex items-center justify-between gap-3 rounded-2xl bg-sky-500/10 px-4 py-3 text-sm text-sky-200">
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-brand-500/10 px-4 py-3 text-sm text-brand-200">
           <span>You haven’t logged any food today.</span>
-          <Link to="/food" className="shrink-0 font-semibold text-sky-300 hover:text-sky-200">
+          <Link to="/food" className="shrink-0 font-semibold text-brand-300 hover:text-brand-200">
             Log food →
           </Link>
         </div>
@@ -188,7 +188,7 @@ function DayStatusControl({ status, onChange }) {
             key={s.value}
             onClick={() => onChange(s.value)}
             className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-              status === s.value ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              status === s.value ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             {s.label}
