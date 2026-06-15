@@ -28,8 +28,10 @@ export function useTargets() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  // `silent` refreshes (after a save) skip the loading flag so the page keeps
+  // showing its current content instead of flashing back to "Loading…".
+  const load = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true)
     setError(null)
     try {
       const [
@@ -106,7 +108,7 @@ export function useTargets() {
       await supabase
         .from('settings')
         .upsert({ user_id, ...patch, updated_at: new Date().toISOString() })
-      await load()
+      await load({ silent: true })
     },
     [load],
   )
@@ -118,7 +120,7 @@ export function useTargets() {
       await supabase
         .from('day_status')
         .upsert({ user_id, logged_on: dayISO, status }, { onConflict: 'user_id,logged_on' })
-      await load()
+      await load({ silent: true })
     },
     [load],
   )

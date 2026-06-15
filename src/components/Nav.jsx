@@ -90,7 +90,7 @@ function Brand() {
 // Bottom tab bar — phones / narrow viewports only.
 export function BottomNav() {
   return (
-    <nav className="safe-bottom fixed inset-x-0 bottom-0 z-10 border-t border-white/5 bg-slate-950/80 backdrop-blur-lg lg:hidden">
+    <nav className="safe-bottom shrink-0 border-t border-white/5 bg-slate-950/80 backdrop-blur-lg lg:hidden">
       <ul className="mx-auto flex max-w-md">
         {tabs.map((t) => {
           const Glyph = Icon[t.icon]
@@ -129,7 +129,7 @@ export function BottomNav() {
 // Persistent left sidebar — desktop / wide viewports only.
 export function Sidebar() {
   return (
-    <aside className="safe-top sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-white/5 bg-slate-950/40 px-4 py-6 lg:flex">
+    <aside className="safe-top hidden h-full w-60 shrink-0 flex-col overflow-y-auto border-r border-white/5 bg-slate-950/40 px-4 py-6 lg:flex">
       <Brand />
 
       <ul className="mt-8 space-y-1">

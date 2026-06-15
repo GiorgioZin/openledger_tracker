@@ -6,8 +6,10 @@ export function useNiggles() {
   const [niggles, setNiggles] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  // `silent` refreshes (after a save) skip the loading flag so the page keeps
+  // showing its current content instead of flashing back to "Loading…".
+  const load = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true)
     const { data } = await supabase
       .from('niggles')
       .select('*')
@@ -30,7 +32,7 @@ export function useNiggles() {
         note: note || null,
         logged_on: dateISO,
       })
-      await load()
+      await load({ silent: true })
     },
     [load],
   )
@@ -38,7 +40,7 @@ export function useNiggles() {
   const remove = useCallback(
     async (id) => {
       await supabase.from('niggles').delete().eq('id', id)
-      await load()
+      await load({ silent: true })
     },
     [load],
   )
@@ -47,7 +49,7 @@ export function useNiggles() {
   const restore = useCallback(
     async (row) => {
       await supabase.from('niggles').insert(row)
-      await load()
+      await load({ silent: true })
     },
     [load],
   )
