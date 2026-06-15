@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { isConfigured, isDemo } from './lib/supabase.js'
 import { useAuth } from './context/AuthContext.jsx'
@@ -17,6 +18,14 @@ import ExportPage from './components/ExportPage.jsx'
 export default function App() {
   const { session, loading } = useAuth()
   const location = useLocation()
+  const mainRef = useRef(null)
+
+  // The scroll lives on <main>, which persists across route changes, so reset
+  // it to the top on navigation — otherwise switching sections lands you
+  // mid-page (and clamps on shorter pages), which looks like the page jumping.
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0)
+  }, [location.pathname])
 
   if (!isConfigured) return <SetupNotice />
   if (loading) return <Splash />
@@ -34,7 +43,7 @@ export default function App() {
           )}
           {/* The scroll lives here, not on the body — keeps the mobile toolbar
               (and the bottom nav) from jumping when content height changes. */}
-          <main className="flex-1 overflow-y-auto overscroll-contain">
+          <main ref={mainRef} className="flex-1 overflow-y-auto overscroll-contain">
             <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-5 lg:px-8 lg:pt-8">
               {/* Keyed by route so each page gets a subtle fade-in on navigation. */}
               <div key={location.pathname} className="animate-fade-in">
