@@ -31,6 +31,17 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* App shell: pin to the (dynamic) viewport height and let an inner region do
+   the scrolling instead of the body. This stops the mobile browser toolbar
+   from collapsing/expanding on scroll — which is what made the bottom nav
+   "jump" when switching sections. `100vh` is the fallback; `100dvh` wins where
+   supported. */
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
 /* Respect the iPhone safe areas (notch / home indicator). */
 .safe-top {
   padding-top: env(safe-area-inset-top);

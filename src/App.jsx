@@ -24,32 +24,36 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <div className="flex min-h-full">
+      <div className="app-shell flex">
         <Sidebar />
-        <div className="safe-top flex min-h-full min-w-0 flex-1 flex-col">
+        <div className="safe-top flex min-h-0 min-w-0 flex-1 flex-col">
           {isDemo && (
-            <div className="bg-amber-500/90 px-4 py-1.5 text-center text-xs font-medium text-amber-950">
+            <div className="shrink-0 bg-amber-500/90 px-4 py-1.5 text-center text-xs font-medium text-amber-950">
               Demo mode — sample data, nothing is saved
             </div>
           )}
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-5 lg:px-8 lg:pb-10 lg:pt-8">
-            {/* Keyed by route so each page gets a subtle fade-in on navigation. */}
-            <div key={location.pathname} className="animate-fade-in">
-              <Routes location={location}>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/food" element={<FoodPage />} />
-                <Route path="/weight" element={<WeightPage />} />
-                <Route path="/workouts" element={<WorkoutsPage />} />
-                <Route path="/trends" element={<TrendsPage />} />
-                <Route path="/injuries" element={<InjuriesPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/export" element={<ExportPage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
+          {/* The scroll lives here, not on the body — keeps the mobile toolbar
+              (and the bottom nav) from jumping when content height changes. */}
+          <main className="flex-1 overflow-y-auto overscroll-contain">
+            <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-5 lg:px-8 lg:pt-8">
+              {/* Keyed by route so each page gets a subtle fade-in on navigation. */}
+              <div key={location.pathname} className="animate-fade-in">
+                <Routes location={location}>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/food" element={<FoodPage />} />
+                  <Route path="/weight" element={<WeightPage />} />
+                  <Route path="/workouts" element={<WorkoutsPage />} />
+                  <Route path="/trends" element={<TrendsPage />} />
+                  <Route path="/injuries" element={<InjuriesPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/export" element={<ExportPage />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </div>
             </div>
           </main>
+          <BottomNav />
         </div>
-        <BottomNav />
       </div>
     </ToastProvider>
   )

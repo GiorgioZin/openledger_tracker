@@ -7,8 +7,10 @@ export function useWorkouts() {
   const [workouts, setWorkouts] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  // `silent` refreshes (after a save) skip the loading flag so the page keeps
+  // showing its current content instead of flashing back to "Loading…".
+  const load = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true)
     const [{ data: ws }, { data: sets }] = await Promise.all([
       supabase.from('workouts').select('*').order('performed_on', { ascending: false }),
       supabase.from('workout_sets').select('*'),
@@ -35,7 +37,7 @@ export function useWorkouts() {
         .from('workouts')
         .insert({ user_id: u?.user?.id, performed_on, notes: notes || null })
         .select()
-      await load()
+      await load({ silent: true })
       return Array.isArray(data) ? data[0] : data
     },
     [load],
@@ -55,7 +57,7 @@ export function useWorkouts() {
         setup: fields.setup || null,
         note: fields.note || null,
       })
-      await load()
+      await load({ silent: true })
     },
     [load],
   )
@@ -63,7 +65,7 @@ export function useWorkouts() {
   const updateSet = useCallback(
     async (id, fields) => {
       await supabase.from('workout_sets').update(fields).eq('id', id)
-      await load()
+      await load({ silent: true })
     },
     [load],
   )
@@ -71,7 +73,7 @@ export function useWorkouts() {
   const removeSet = useCallback(
     async (id) => {
       await supabase.from('workout_sets').delete().eq('id', id)
-      await load()
+      await load({ silent: true })
     },
     [load],
   )
@@ -80,7 +82,7 @@ export function useWorkouts() {
   const restoreSet = useCallback(
     async (row) => {
       await supabase.from('workout_sets').insert(row)
-      await load()
+      await load({ silent: true })
     },
     [load],
   )
@@ -90,7 +92,7 @@ export function useWorkouts() {
       // Sets are removed first so undo can restore them explicitly.
       await supabase.from('workout_sets').delete().eq('workout_id', id)
       await supabase.from('workouts').delete().eq('id', id)
-      await load()
+      await load({ silent: true })
     },
     [load],
   )
@@ -101,7 +103,7 @@ export function useWorkouts() {
       const { sets: _drop, ...row } = workout
       await supabase.from('workouts').insert(row)
       if (sets && sets.length) await supabase.from('workout_sets').insert(sets)
-      await load()
+      await load({ silent: true })
     },
     [load],
   )

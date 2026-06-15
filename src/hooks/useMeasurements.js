@@ -6,8 +6,10 @@ export function useMeasurements() {
   const [byKind, setByKind] = useState({})
   const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  // `silent` refreshes (after a save) skip the loading flag so the page keeps
+  // showing its current content instead of flashing back to "Loading…".
+  const load = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true)
     const { data } = await supabase
       .from('measurements')
       .select('*')
@@ -33,7 +35,7 @@ export function useMeasurements() {
         value: Number(value),
         logged_on: dateISO,
       })
-      await load()
+      await load({ silent: true })
     },
     [load],
   )
@@ -41,7 +43,7 @@ export function useMeasurements() {
   const remove = useCallback(
     async (id) => {
       await supabase.from('measurements').delete().eq('id', id)
-      await load()
+      await load({ silent: true })
     },
     [load],
   )
@@ -50,7 +52,7 @@ export function useMeasurements() {
   const restore = useCallback(
     async (row) => {
       await supabase.from('measurements').insert(row)
-      await load()
+      await load({ silent: true })
     },
     [load],
   )
