@@ -21,7 +21,6 @@ body {
     rgba(79, 70, 229, 0.12),
     transparent 60%
   );
-  background-attachment: fixed;
   color: #e2e8f0;
   font-family: 'Inter var', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     Helvetica, Arial, sans-serif;
@@ -31,14 +30,16 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* App shell: pin to the (dynamic) viewport height and let an inner region do
-   the scrolling instead of the body. This stops the mobile browser toolbar
-   from collapsing/expanding on scroll — which is what made the bottom nav
-   "jump" when switching sections. `100vh` is the fallback; `100dvh` wins where
-   supported. */
+/* App shell: pin to the viewport and let an inner region do the scrolling
+   instead of the body. This stops the mobile browser toolbar from
+   collapsing/expanding on scroll — which is what made the bottom nav "jump"
+   when switching sections. We use `100svh` (the *small*, stable viewport
+   height) deliberately: unlike `100dvh` it never re-evaluates when the toolbar
+   toggles, so the shell height can't change underfoot. `100vh` is the
+   fallback for older browsers. */
 .app-shell {
   height: 100vh;
-  height: 100dvh;
+  height: 100svh;
   overflow: hidden;
 }
 
